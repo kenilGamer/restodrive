@@ -32,14 +32,10 @@ export async function GET(
               },
             },
             variant: true,
-            modifiers: {
-              include: {
-                modifier: true,
-              },
-            },
+            modifiers: true,
           },
         },
-        payment: true,
+        payments: true,
         table: true,
         restaurant: true,
       },

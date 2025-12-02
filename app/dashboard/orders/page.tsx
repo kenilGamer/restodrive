@@ -9,8 +9,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 export default async function OrdersPage({
   searchParams,
 }: {
-  searchParams: { status?: string }
+  searchParams: Promise<{ status?: string }>
 }) {
+  // Await searchParams in Next.js 15
+  const params = await searchParams
   const session = await getServerSession(authOptions)
 
   if (!session?.user?.id) {
@@ -38,7 +40,7 @@ export default async function OrdersPage({
     )
   }
 
-  const status = searchParams.status || "all"
+  const status = params.status || "all"
 
   return (
     <div>

@@ -3,8 +3,17 @@ import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { AnalyticsDashboard } from "@/components/analytics/analytics-dashboard"
 
-export default async function AnalyticsPage() {
+export const revalidate = 60
+
+export default async function AnalyticsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ startDate?: string; endDate?: string; groupBy?: string }>
+}) {
+  // Await searchParams in Next.js 15
+  const params = await searchParams
   const session = await getServerSession(authOptions)
 
   if (!session?.user?.id) {
@@ -32,6 +41,20 @@ export default async function AnalyticsPage() {
     )
   }
 
+  // Default date range: last 30 days
+  const endDate = params.endDate
+    ? new Date(params.endDate)
+    : new Date()
+  const startDate = params.startDate
+    ? new Date(params.startDate)
+    : (() => {
+        const date = new Date()
+        date.setDate(date.getDate() - 30)
+        return date
+      })()
+
+  const groupBy = (params.groupBy as "day" | "week" | "month") || "day"
+
   return (
     <div>
       <div className="mb-8">
@@ -41,20 +64,12 @@ export default async function AnalyticsPage() {
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Analytics Dashboard</CardTitle>
-          <CardDescription>
-            Analytics features coming soon...
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-gray-600">
-            Charts, graphs, and detailed analytics will be displayed here.
-          </p>
-        </CardContent>
-      </Card>
+      <AnalyticsDashboard
+        restaurantId={restaurant.id}
+        defaultStartDate={startDate.toISOString().split("T")[0]}
+        defaultEndDate={endDate.toISOString().split("T")[0]}
+        defaultGroupBy={groupBy}
+      />
     </div>
   )
 }
-

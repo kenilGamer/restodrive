@@ -16,9 +16,9 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#0D0D0D]">
       <DashboardSidebar />
-      <div className="lg:pl-64">
+      <div className="lg:pl-72">
         <DashboardHeader />
         <main className="py-6">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -29,4 +29,3 @@ export default async function DashboardLayout({
     </div>
   )
 }
-

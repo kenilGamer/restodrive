@@ -42,14 +42,10 @@ export async function GET(req: Request) {
               },
             },
             variant: true,
-            modifiers: {
-              include: {
-                modifier: true,
-              },
-            },
+            modifiers: true,
           },
         },
-        payment: true,
+        payments: true,
         table: true,
       },
       orderBy: {
@@ -133,14 +129,19 @@ export async function POST(req: Request) {
         }
       }
 
-      // Add modifier prices
+      // Add modifier prices and collect modifier details
+      const modifierDetails = []
       if (item.modifiers && item.modifiers.length > 0) {
         for (const modId of item.modifiers) {
           const modifier = await db.itemModifier.findUnique({
             where: { id: modId },
           })
           if (modifier) {
-            itemPrice += Number(modifier.price)
+            itemPrice += Number(modifier.price || 0)
+            modifierDetails.push({
+              name: modifier.name,
+              price: Number(modifier.price || 0),
+            })
           }
         }
       }
@@ -155,7 +156,7 @@ export async function POST(req: Request) {
         price: itemPrice,
         subtotal: itemSubtotal,
         specialInstructions: item.specialInstructions || null,
-        modifiers: item.modifiers || [],
+        modifiers: modifierDetails,
       })
     }
 
@@ -181,8 +182,8 @@ export async function POST(req: Request) {
         customerName: customerName || null,
         customerPhone: customerPhone || null,
         customerEmail: customerEmail || null,
+        customerAddress: deliveryAddress || null,
         tableId: tableId || null,
-        deliveryAddress: deliveryAddress || null,
         specialInstructions: specialInstructions || null,
         subtotal,
         tax,
@@ -197,8 +198,9 @@ export async function POST(req: Request) {
             subtotal: item.subtotal,
             specialInstructions: item.specialInstructions,
             modifiers: {
-              create: item.modifiers.map((modifierId) => ({
-                modifierId,
+              create: item.modifiers.map((modifier) => ({
+                name: modifier.name,
+                price: modifier.price,
               })),
             },
           })),
