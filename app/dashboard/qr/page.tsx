@@ -4,9 +4,9 @@ import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { QrCode, Download, Eye } from "lucide-react"
-import Link from "next/link"
+import { QrCode, TrendingUp, Scan } from "lucide-react"
 import { QRGenerator } from "@/components/qr/qr-generator"
+import { QRCodeCard } from "@/components/qr/qr-code-card"
 
 export default async function QRMenuPage() {
   const session = await getServerSession(authOptions)
@@ -26,6 +26,9 @@ export default async function QRMenuPage() {
             },
           },
         },
+        orderBy: {
+          createdAt: "desc",
+        },
       },
       menus: {
         where: { isActive: true },
@@ -39,10 +42,10 @@ export default async function QRMenuPage() {
   if (!restaurant) {
     return (
       <div>
-        <Card>
+        <Card className="bg-[#1A1A1A] border-[#2A2A2A] rounded-[18px] shadow-glow">
           <CardHeader>
-            <CardTitle>No Restaurant Found</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-white">No Restaurant Found</CardTitle>
+            <CardDescription className="text-gray-400">
               Please create a restaurant first.
             </CardDescription>
           </CardHeader>
@@ -51,20 +54,69 @@ export default async function QRMenuPage() {
     )
   }
 
+  const totalScans = restaurant.qrCodes.reduce((sum, qr) => sum + qr._count.scans, 0)
+
   return (
-    <div>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">QR Menus</h1>
-        <p className="mt-2 text-sm text-gray-600">
-          Generate QR codes for your digital menus
+    <div className="space-y-6">
+      <div className="mb-6">
+        <h1 className="text-[24px] font-semibold text-white">QR Menus</h1>
+        <p className="mt-2 text-sm text-gray-400">
+          Generate and manage QR codes for your digital menus
         </p>
       </div>
 
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="bg-[#1A1A1A] border-[#2A2A2A] rounded-[18px] shadow-glow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400 mb-1">Total QR Codes</p>
+                <p className="text-2xl font-bold text-white">{restaurant.qrCodes.length}</p>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-[#C97AFF]/20 flex items-center justify-center">
+                <QrCode className="h-6 w-6 text-[#C97AFF]" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-[#1A1A1A] border-[#2A2A2A] rounded-[18px] shadow-glow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400 mb-1">Total Scans</p>
+                <p className="text-2xl font-bold text-white">{totalScans}</p>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-[#11C97A]/20 flex items-center justify-center">
+                <Scan className="h-6 w-6 text-[#11C97A]" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-[#1A1A1A] border-[#2A2A2A] rounded-[18px] shadow-glow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400 mb-1">Avg. Scans/Code</p>
+                <p className="text-2xl font-bold text-white">
+                  {restaurant.qrCodes.length > 0
+                    ? Math.round(totalScans / restaurant.qrCodes.length)
+                    : 0}
+                </p>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-[#6B7CFF]/20 flex items-center justify-center">
+                <TrendingUp className="h-6 w-6 text-[#6B7CFF]" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {restaurant.qrCodes.length === 0 ? (
-        <Card>
+        <Card className="bg-[#1A1A1A] border-[#2A2A2A] rounded-[18px] shadow-glow">
           <CardHeader>
-            <CardTitle>No QR Codes Yet</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-white">No QR Codes Yet</CardTitle>
+            <CardDescription className="text-gray-400">
               Generate your first QR code to get started
             </CardDescription>
           </CardHeader>
@@ -73,54 +125,18 @@ export default async function QRMenuPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {restaurant.qrCodes.map((qrCode) => (
-            <Card key={qrCode.id}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">QR Code</CardTitle>
-                  <span className="text-xs text-gray-500">
-                    {qrCode._count.scans} scans
-                  </span>
-                </div>
-                <CardDescription>Code: {qrCode.code}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {qrCode.imageUrl && (
-                  <img
-                    src={qrCode.imageUrl}
-                    alt="QR Code"
-                    className="w-full mb-4 border rounded"
-                  />
-                )}
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="flex-1" asChild>
-                    <Link href={qrCode.url} target="_blank">
-                      <Eye className="mr-2 h-4 w-4" />
-                      Preview
-                    </Link>
-                  </Button>
-                  <Button variant="outline" size="sm" className="flex-1">
-                    <Download className="mr-2 h-4 w-4" />
-                    Download
-                  </Button>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full mt-2"
-                  asChild
-                >
-                  <Link href={`/dashboard/qr/${qrCode.code}/analytics`}>
-                    View Analytics
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-white">Your QR Codes</h2>
+            <QRGenerator restaurantId={restaurant.id} />
+          </div>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {restaurant.qrCodes.map((qrCode, index) => (
+              <QRCodeCard key={qrCode.id} qrCode={qrCode} index={index} />
+            ))}
+          </div>
+        </>
       )}
     </div>
   )
 }
-

@@ -50,8 +50,8 @@ export default async function MenuPage() {
     <div>
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Menu Builder</h1>
-          <p className="mt-2 text-sm text-gray-600">
+          <h1 className="text-3xl font-bold text-white">Menu Builder</h1>
+          <p className="mt-2 text-sm text-white">
             Create and manage your digital menus
           </p>
         </div>

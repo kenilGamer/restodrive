@@ -1,0 +1,139 @@
+{
+  "database": {
+    "name": "restodrive_db",
+    "host": "localhost",
+    "port": 5432,
+    "adminUser": "postgres"
+  },
+  "users": [
+    {
+      "username": "restodrive_app",
+      "password": "change_me_in_production",
+      "permissions": ["CONNECT", "CREATE", "USAGE"],
+      "databases": ["restodrive_db"]
+    },
+    {
+      "username": "restodrive_readonly",
+      "password": "readonly_password",
+      "permissions": ["CONNECT"],
+      "databases": ["restodrive_db"]
+    }
+  ],
+  "tables": [
+    {
+      "name": "audit_logs",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "UUID",
+          "default": "gen_random_uuid()",
+          "constraints": ["PRIMARY KEY", "NOT NULL"]
+        },
+        {
+          "name": "table_name",
+          "type": "VARCHAR(100)",
+          "constraints": ["NOT NULL"]
+        },
+        {
+          "name": "record_id",
+          "type": "UUID",
+          "constraints": ["NOT NULL"]
+        },
+        {
+          "name": "action",
+          "type": "VARCHAR(20)",
+          "constraints": ["NOT NULL"]
+        },
+        {
+          "name": "old_data",
+          "type": "JSONB"
+        },
+        {
+          "name": "new_data",
+          "type": "JSONB"
+        },
+        {
+          "name": "user_id",
+          "type": "UUID"
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP",
+          "default": "CURRENT_TIMESTAMP",
+          "constraints": ["NOT NULL"]
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_audit_logs_table_record",
+          "columns": ["table_name", "record_id"],
+          "unique": false
+        },
+        {
+          "name": "idx_audit_logs_created_at",
+          "columns": ["created_at"],
+          "unique": false
+        },
+        {
+          "name": "idx_audit_logs_user_id",
+          "columns": ["user_id"],
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "system_settings",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "key",
+          "type": "VARCHAR(100)",
+          "constraints": ["PRIMARY KEY", "NOT NULL"]
+        },
+        {
+          "name": "value",
+          "type": "TEXT",
+          "constraints": ["NOT NULL"]
+        },
+        {
+          "name": "description",
+          "type": "TEXT"
+        },
+        {
+          "name": "updated_at",
+          "type": "TIMESTAMP",
+          "default": "CURRENT_TIMESTAMP",
+          "constraints": ["NOT NULL"]
+        }
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "name": "grant_app_permissions",
+      "type": "GRANT",
+      "user": "restodrive_app",
+      "database": "restodrive_db",
+      "permissions": ["ALL PRIVILEGES"]
+    },
+    {
+      "name": "grant_readonly_permissions",
+      "type": "GRANT",
+      "user": "restodrive_readonly",
+      "database": "restodrive_db",
+      "permissions": ["CONNECT"]
+    },
+    {
+      "name": "create_uuid_extension",
+      "type": "CREATE_EXTENSION",
+      "extension": "pgcrypto"
+    },
+    {
+      "name": "create_schema",
+      "type": "CUSTOM",
+      "sql": "CREATE SCHEMA IF NOT EXISTS analytics;"
+    }
+  ]
+}
+

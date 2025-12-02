@@ -48,8 +48,8 @@ export default async function MenuEditPage({
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">{menu.name}</h1>
-        <p className="mt-2 text-sm text-gray-600">
+        <h1 className="text-3xl font-bold text-white">{menu.name}</h1>
+        <p className="mt-2 text-sm text-white">
           Build your menu by adding categories and items
         </p>
       </div>

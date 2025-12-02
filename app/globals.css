@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  /* Dark Theme Colors */
+  /* Dark Theme Colors (for dashboard) */
   --background: #0D0D0D;
   --foreground: #FFFFFF;
   --card: #1A1A1A;
@@ -29,6 +29,18 @@
   --expense-blue: #6B7CFF;
   --avg-revenue-red: #FF6A55;
   --active-yellow: #FCD34D;
+  
+  /* Luxury Gold Palette */
+  --gold-50: #FFFBEB;
+  --gold-100: #FEF3C7;
+  --gold-200: #FDE68A;
+  --gold-300: #FCD34D;
+  --gold-400: #FBBF24;
+  --gold-500: #F59E0B;
+  --gold-600: #D97706;
+  --gold-700: #B45309;
+  --gold-800: #92400E;
+  --gold-900: #78350F;
 }
 
 @theme inline {
@@ -51,8 +63,21 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-space-grotesk);
+  --font-mono: var(--font-space-grotesk);
+  --font-orbitron: var(--font-orbitron);
+  
+  /* Gold Colors */
+  --color-gold-50: #FFFBEB;
+  --color-gold-100: #FEF3C7;
+  --color-gold-200: #FDE68A;
+  --color-gold-300: #FCD34D;
+  --color-gold-400: #FBBF24;
+  --color-gold-500: #F59E0B;
+  --color-gold-600: #D97706;
+  --color-gold-700: #B45309;
+  --color-gold-800: #92400E;
+  --color-gold-900: #78350F;
 }
 
 body {
@@ -77,5 +102,52 @@ body {
   
   .shadow-glow-colored {
     box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.3), 0 0 20px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Luxury Gold Shadows */
+  .shadow-gold-sm {
+    box-shadow: 0 2px 8px rgba(217, 119, 6, 0.15);
+  }
+  
+  .shadow-gold-md {
+    box-shadow: 0 4px 16px rgba(217, 119, 6, 0.2), 0 0 0 1px rgba(217, 119, 6, 0.05);
+  }
+  
+  .shadow-gold-lg {
+    box-shadow: 0 10px 30px rgba(217, 119, 6, 0.25), 0 0 0 1px rgba(217, 119, 6, 0.1);
+  }
+  
+  /* Font Utilities */
+  .font-orbitron {
+    font-family: var(--font-orbitron), sans-serif;
+  }
+  
+  .font-space-grotesk {
+    font-family: var(--font-space-grotesk), sans-serif;
+  }
+  
+  /* Neon Glow Animations */
+  @keyframes gradient {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+  
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradient 3s ease infinite;
+  }
+  
+  /* Glowing Text Effect */
+  .text-glow {
+    text-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 30px currentColor;
+  }
+  
+  /* Neon Border Glow */
+  .border-glow {
+    box-shadow: 0 0 10px currentColor, 0 0 20px currentColor, inset 0 0 10px currentColor;
   }
 }

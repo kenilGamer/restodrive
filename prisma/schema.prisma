@@ -353,6 +353,8 @@ model Order {
   @@index([orderNumber])
   @@index([status])
   @@index([createdAt])
+  @@index([restaurantId, createdAt])
+  @@index([restaurantId, createdAt, paymentStatus])
   @@map("orders")
 }
 

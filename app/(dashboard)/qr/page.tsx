@@ -54,8 +54,8 @@ export default async function QRMenuPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">QR Menus</h1>
-        <p className="mt-2 text-sm text-gray-600">
+        <h1 className="text-3xl font-bold text-white">QR Menus</h1>
+        <p className="mt-2 text-sm text-white">
           Generate QR codes for your digital menus
         </p>
       </div>

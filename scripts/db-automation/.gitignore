@@ -1,0 +1,14 @@
+# Generated files
+*.sql
+generated_*.sql
+setup*.sql
+
+# Configuration files (may contain sensitive data)
+config.json
+config.*.json
+!config.template.json
+!example-config.json
+
+# Node modules (if this becomes a separate package)
+node_modules/
+

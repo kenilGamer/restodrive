@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 import Link from "next/link"
+import { MenuCard } from "@/components/menu/menu-card"
 
 export default async function MenuPage() {
   const session = await getServerSession(authOptions)
@@ -25,6 +26,9 @@ export default async function MenuPage() {
             },
           },
         },
+        orderBy: {
+          createdAt: "desc",
+        },
       },
     },
   })
@@ -34,10 +38,10 @@ export default async function MenuPage() {
   if (!restaurant) {
     return (
       <div>
-        <Card>
+        <Card className="bg-[#1A1A1A] border-[#2A2A2A] rounded-[18px] shadow-glow">
           <CardHeader>
-            <CardTitle>No Restaurant Found</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-white">No Restaurant Found</CardTitle>
+            <CardDescription className="text-gray-400">
               Please create a restaurant first.
             </CardDescription>
           </CardHeader>
@@ -47,15 +51,21 @@ export default async function MenuPage() {
   }
 
   return (
-    <div>
-      <div className="mb-8 flex items-center justify-between">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Menu Builder</h1>
-          <p className="mt-2 text-sm text-gray-600">
+          <h1 className="text-[24px] font-semibold text-white">Menu Builder</h1>
+          <p className="mt-2 text-sm text-gray-400">
             Create and manage your digital menus
           </p>
+          <p className="mt-1 text-xs text-gray-500">
+            Menu URL: <span className="text-cyan-400 font-mono">/qr/{restaurant.slug}</span>
+          </p>
         </div>
-        <Button asChild>
+        <Button
+          asChild
+          className="bg-gradient-to-r from-[#C97AFF] to-[#6B7CFF] hover:from-[#B869E6] hover:to-[#5B6CE6] text-white border-0 shadow-glow"
+        >
           <Link href="/dashboard/menu/new">
             <Plus className="mr-2 h-4 w-4" />
             Create Menu
@@ -64,15 +74,18 @@ export default async function MenuPage() {
       </div>
 
       {restaurant.menus.length === 0 ? (
-        <Card>
+        <Card className="bg-[#1A1A1A] border-[#2A2A2A] rounded-[18px] shadow-glow">
           <CardHeader>
-            <CardTitle>No Menus Yet</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-white">No Menus Yet</CardTitle>
+            <CardDescription className="text-gray-400">
               Create your first menu to get started
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button asChild>
+            <Button
+              asChild
+              className="bg-gradient-to-r from-[#C97AFF] to-[#6B7CFF] hover:from-[#B869E6] hover:to-[#5B6CE6] text-white border-0"
+            >
               <Link href="/dashboard/menu/new">
                 <Plus className="mr-2 h-4 w-4" />
                 Create Your First Menu
@@ -81,37 +94,22 @@ export default async function MenuPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {restaurant.menus.map((menu) => (
-            <Card key={menu.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>{menu.name}</CardTitle>
-                  {menu.isActive && (
-                    <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                      Active
-                    </span>
-                  )}
-                </div>
-                <CardDescription>
-                  Version {menu.version} • {menu._count.categories} categories
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" asChild className="flex-1">
-                    <Link href={`/dashboard/menu/${menu.id}`}>Edit</Link>
-                  </Button>
-                  <Button variant="outline" size="sm" className="flex-1">
-                    Preview
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {restaurant.menus.map((menu, index) => {
+            if (!restaurant.slug) {
+              console.error("Restaurant slug is missing for restaurant:", restaurant.id, restaurant.name)
+            }
+            return (
+              <MenuCard 
+                key={menu.id} 
+                menu={menu} 
+                index={index} 
+                restaurantSlug={restaurant.slug || ''} 
+              />
+            )
+          })}
         </div>
       )}
     </div>
   )
 }
-

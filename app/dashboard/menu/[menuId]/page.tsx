@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
-import { MenuEditor } from "@/components/menu/menu-editor"
+import { PremiumMenuEditor } from "@/components/menu/premium-menu-editor"
 
 export default async function MenuEditPage({
   params,
@@ -25,6 +25,11 @@ export default async function MenuEditPage({
       },
     },
     include: {
+      restaurant: {
+        select: {
+          slug: true,
+        },
+      },
       categories: {
         include: {
           items: {
@@ -45,17 +50,27 @@ export default async function MenuEditPage({
     redirect("/dashboard/menu")
   }
 
-  return (
-    <div>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">{menu.name}</h1>
-        <p className="mt-2 text-sm text-gray-600">
-          Build your menu by adding categories and items
-        </p>
-      </div>
+  // Serialize Decimal fields to numbers for Client Component
+  // Prisma Decimal objects cannot be serialized to Client Components
+  const serializedMenu = {
+    ...menu,
+    categories: menu.categories.map((category) => ({
+      ...category,
+      items: category.items.map((item) => ({
+        ...item,
+        price: Number(item.price),
+        variants: item.variants.map((variant) => ({
+          ...variant,
+          price: Number(variant.price),
+        })),
+        modifiers: item.modifiers.map((modifier) => ({
+          ...modifier,
+          price: Number(modifier.price),
+        })),
+      })),
+    })),
+  } as any // Type assertion needed because we're converting Decimal to number
 
-      <MenuEditor menu={menu} />
-    </div>
-  )
+  return <PremiumMenuEditor menu={serializedMenu} restaurantSlug={menu.restaurant.slug} />
 }
 

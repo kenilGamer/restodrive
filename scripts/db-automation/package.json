@@ -1,0 +1,20 @@
+{
+  "name": "db-automation",
+  "version": "1.0.0",
+  "description": "PostgreSQL database automation generator",
+  "scripts": {
+    "generate": "tsx generator.ts --config config.json --output generated_setup.sql",
+    "generate:dev": "tsx generator.ts --config config.dev.json --output setup-dev.sql",
+    "generate:prod": "tsx generator.ts --config config.prod.json --output setup-prod.sql",
+    "setup": "./quick-setup.sh"
+  },
+  "dependencies": {
+    "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "tsx": "^4.7.0",
+    "typescript": "^5"
+  }
+}
+

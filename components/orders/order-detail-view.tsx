@@ -82,7 +82,7 @@ export function OrderDetailView({ order: initialOrder }: OrderDetailViewProps) {
         </Link>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-3xl font-bold text-white">
               Order #{order.orderNumber}
             </h1>
             <p className="mt-2 text-sm text-gray-600">

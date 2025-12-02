@@ -16,8 +16,9 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-// Cache this page for 60 seconds to reduce database load
-export const revalidate = 60
+// Cache this page for 30 seconds to reduce database load
+// Reduced from 60s for more real-time updates while still being fast
+export const revalidate = 30
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions)
@@ -27,107 +28,90 @@ export default async function DashboardPage() {
     redirect("/auth/login")
   }
 
-  // Get user's restaurants
+  // Get user's restaurants (removed _count to speed up query)
   const restaurants = await db.restaurant.findMany({
     where: { ownerId: session.user.id },
-    include: {
-      _count: {
-        select: {
-          orders: true,
-          reservations: true,
-        },
-      },
-    },
+    take: 1, // Only need first restaurant
   })
 
   const restaurant = restaurants[0]
 
-  // Get today's stats (only if restaurant exists, run queries in parallel)
+  if (!restaurant) {
+    // Early return if no restaurant - avoids all queries
+    return (
+      <div className="space-y-6">
+        <div className="mb-6">
+          <h1 className="text-[24px] font-semibold text-white">Dashboard</h1>
+          <p className="mt-2 text-sm text-gray-400">
+            Build your menu by adding categories and items
+          </p>
+        </div>
+        <Card className="bg-[#1A1A1A] border-[#2A2A2A] rounded-[18px] shadow-glow">
+          <CardHeader>
+            <CardTitle className="text-white">Get Started</CardTitle>
+            <CardDescription className="text-gray-400">
+              You don't have a restaurant yet. Create one to get started.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-400">
+              Your restaurant will be created automatically when you register. If you're seeing this message, please contact support.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Optimize: Use single SQL query with conditional aggregation
   const today = new Date()
   today.setHours(0, 0, 0, 0)
-  const tomorrow = new Date(today)
-  tomorrow.setDate(tomorrow.getDate() + 1)
-
-  // Get yesterday for comparison
   const yesterday = new Date(today)
   yesterday.setDate(yesterday.getDate() - 1)
+  const weekStart = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
+  const monthStart = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000)
 
-  const [
-    todayOrders,
-    todayRevenue,
-    yesterdayOrders,
-    yesterdayRevenue,
-    weekOrders,
-    weekRevenue,
-    avgExpense,
-  ] = restaurant
-    ? await Promise.all([
-        db.order.count({
-          where: {
-            restaurantId: restaurant.id,
-            createdAt: { gte: today },
-          },
-        }),
-        db.order.aggregate({
-          where: {
-            restaurantId: restaurant.id,
-            createdAt: { gte: today },
-            paymentStatus: "COMPLETED",
-          },
-          _sum: { total: true },
-        }),
-        db.order.count({
-          where: {
-            restaurantId: restaurant.id,
-            createdAt: { gte: yesterday, lt: today },
-          },
-        }),
-        db.order.aggregate({
-          where: {
-            restaurantId: restaurant.id,
-            createdAt: { gte: yesterday, lt: today },
-            paymentStatus: "COMPLETED",
-          },
-          _sum: { total: true },
-        }),
-        db.order.count({
-          where: {
-            restaurantId: restaurant.id,
-            createdAt: { gte: new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000) },
-          },
-        }),
-        db.order.aggregate({
-          where: {
-            restaurantId: restaurant.id,
-            createdAt: { gte: new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000) },
-            paymentStatus: "COMPLETED",
-          },
-          _sum: { total: true },
-        }),
-        // Calculate average expense (simplified - using 30% of revenue as expense)
-        db.order.aggregate({
-          where: {
-            restaurantId: restaurant.id,
-            createdAt: { gte: new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000) },
-            paymentStatus: "COMPLETED",
-          },
-          _avg: { total: true },
-        }),
-      ])
-    : [
-        0,
-        { _sum: { total: null } },
-        0,
-        { _sum: { total: null } },
-        0,
-        { _sum: { total: null } },
-        { _avg: { total: null } },
-      ]
+  // Single optimized SQL query that gets all stats in one go using conditional aggregation
+  // Scans orders table once with all conditions evaluated in SELECT
+  const stats = await db.$queryRaw<Array<{
+    today_orders: bigint
+    today_revenue: number
+    yesterday_orders: bigint
+    yesterday_revenue: number
+    week_orders: bigint
+    week_revenue: number
+    month_avg: number
+  }>>`
+    SELECT 
+      COUNT(CASE WHEN "createdAt" >= ${today} THEN 1 END)::bigint as today_orders,
+      COALESCE(SUM(CASE WHEN "createdAt" >= ${today} AND "paymentStatus" = 'COMPLETED' THEN "total" END)::decimal, 0) as today_revenue,
+      COUNT(CASE WHEN "createdAt" >= ${yesterday} AND "createdAt" < ${today} THEN 1 END)::bigint as yesterday_orders,
+      COALESCE(SUM(CASE WHEN "createdAt" >= ${yesterday} AND "createdAt" < ${today} AND "paymentStatus" = 'COMPLETED' THEN "total" END)::decimal, 0) as yesterday_revenue,
+      COUNT(CASE WHEN "createdAt" >= ${weekStart} THEN 1 END)::bigint as week_orders,
+      COALESCE(SUM(CASE WHEN "createdAt" >= ${weekStart} AND "paymentStatus" = 'COMPLETED' THEN "total" END)::decimal, 0) as week_revenue,
+      COALESCE(AVG(CASE WHEN "createdAt" >= ${monthStart} AND "paymentStatus" = 'COMPLETED' THEN "total" END)::decimal, 0) as month_avg
+    FROM "orders"
+    WHERE "restaurantId" = ${restaurant.id}
+      AND "createdAt" >= ${monthStart}
+  `
 
-  const todayRevenueValue = Number(todayRevenue._sum.total || 0)
-  const yesterdayRevenueValue = Number(yesterdayRevenue._sum.total || 0)
-  const weekRevenueValue = Number(weekRevenue._sum.total || 0)
-  const avgExpenseValue = Number(avgExpense._avg.total || 0) * 0.3
+  const statsRow = stats[0] || {
+    today_orders: BigInt(0),
+    today_revenue: 0,
+    yesterday_orders: BigInt(0),
+    yesterday_revenue: 0,
+    week_orders: BigInt(0),
+    week_revenue: 0,
+    month_avg: 0,
+  }
+
+  const todayOrders = Number(statsRow.today_orders)
+  const todayRevenueValue = Number(statsRow.today_revenue)
+  const yesterdayOrders = Number(statsRow.yesterday_orders)
+  const yesterdayRevenueValue = Number(statsRow.yesterday_revenue)
+  const weekOrders = Number(statsRow.week_orders)
+  const weekRevenueValue = Number(statsRow.week_revenue)
+  const avgExpenseValue = Number(statsRow.month_avg) * 0.3
 
   const revenueChange =
     yesterdayRevenueValue > 0
@@ -173,21 +157,7 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      {!restaurant ? (
-        <Card className="bg-[#1A1A1A] border-[#2A2A2A] rounded-[18px] shadow-glow">
-          <CardHeader>
-            <CardTitle className="text-white">Get Started</CardTitle>
-            <CardDescription className="text-gray-400">
-              You don't have a restaurant yet. Create one to get started.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-gray-400">
-              Your restaurant will be created automatically when you register. If you're seeing this message, please contact support.
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
+      {(
         <>
           {/* Premium Metric Cards */}
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">

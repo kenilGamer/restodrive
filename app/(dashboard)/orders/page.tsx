@@ -43,8 +43,8 @@ export default async function OrdersPage({
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Orders</h1>
-        <p className="mt-2 text-sm text-gray-600">
+        <h1 className="text-3xl font-bold text-white">Orders</h1>
+        <p className="mt-2 text-sm text-white">
           Manage and track all orders from your restaurant
         </p>
       </div>

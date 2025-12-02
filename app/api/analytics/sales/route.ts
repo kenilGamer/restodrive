@@ -40,69 +40,41 @@ export async function GET(req: Request) {
     const end = new Date(endDate)
     end.setHours(23, 59, 59, 999)
 
-    // Get orders in date range
-    const orders = await db.order.findMany({
-      where: {
-        restaurantId,
-        createdAt: {
-          gte: start,
-          lte: end,
+    // Use SQL aggregation instead of fetching all orders
+    // This is much faster for large datasets - aggregates in database
+    // Use Prisma's queryRaw with proper parameter binding
+    const breakdown = await db.$queryRaw<Array<{
+      date: string
+      revenue: number
+      orders: number
+    }>>`
+      SELECT 
+        ${groupBy === "week" 
+          ? `DATE_TRUNC('week', "createdAt"::date)::text as date`
+          : groupBy === "month"
+          ? `TO_CHAR("createdAt", 'YYYY-MM') as date`
+          : `DATE("createdAt")::text as date`
         },
-        paymentStatus: "COMPLETED",
-      },
-      select: {
-        id: true,
-        createdAt: true,
-        total: true,
-        subtotal: true,
-        tax: true,
-        deliveryFee: true,
-        discount: true,
-      },
-      orderBy: {
-        createdAt: "asc",
-      },
-    })
+        SUM("total")::decimal as revenue,
+        COUNT(*)::integer as orders
+      FROM "orders"
+      WHERE "restaurantId" = ${restaurantId}
+        AND "createdAt" >= ${start}
+        AND "createdAt" <= ${end}
+        AND "paymentStatus" = 'COMPLETED'
+      GROUP BY ${groupBy === "week" 
+        ? `DATE_TRUNC('week', "createdAt"::date)`
+        : groupBy === "month"
+        ? `TO_CHAR("createdAt", 'YYYY-MM')`
+        : `DATE("createdAt")`
+      }
+      ORDER BY date ASC
+    `
 
-    // Calculate totals
-    const totalRevenue = orders.reduce((sum, order) => sum + Number(order.total), 0)
-    const totalOrders = orders.length
+    // Calculate totals from breakdown (faster than separate query)
+    const totalRevenue = breakdown.reduce((sum, item) => sum + Number(item.revenue), 0)
+    const totalOrders = breakdown.reduce((sum, item) => sum + Number(item.orders), 0)
     const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0
-
-    // Group by period
-    const dailyBreakdown: Record<string, { revenue: number; orders: number }> = {}
-
-    orders.forEach((order) => {
-      let key: string
-      const date = new Date(order.createdAt)
-
-      switch (groupBy) {
-        case "week":
-          const weekStart = new Date(date)
-          weekStart.setDate(date.getDate() - date.getDay())
-          key = weekStart.toISOString().split("T")[0]
-          break
-        case "month":
-          key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
-          break
-        default:
-          key = date.toISOString().split("T")[0]
-      }
-
-      if (!dailyBreakdown[key]) {
-        dailyBreakdown[key] = { revenue: 0, orders: 0 }
-      }
-      dailyBreakdown[key].revenue += Number(order.total)
-      dailyBreakdown[key].orders += 1
-    })
-
-    const breakdown = Object.entries(dailyBreakdown)
-      .map(([date, data]) => ({
-        date,
-        revenue: data.revenue,
-        orders: data.orders,
-      }))
-      .sort((a, b) => a.date.localeCompare(b.date))
 
     // Calculate trend (compare with previous period)
     const previousStart = new Date(start)
@@ -112,7 +84,8 @@ export async function GET(req: Request) {
     previousStart.setDate(previousStart.getDate() - periodDays)
     previousEnd.setTime(previousStart.getTime() + (end.getTime() - start.getTime()))
 
-    const previousOrders = await db.order.findMany({
+    // Use aggregation instead of fetching all orders
+    const previousRevenueResult = await db.order.aggregate({
       where: {
         restaurantId,
         createdAt: {
@@ -121,12 +94,16 @@ export async function GET(req: Request) {
         },
         paymentStatus: "COMPLETED",
       },
+      _sum: {
+        total: true,
+      },
+      _count: {
+        id: true,
+      },
     })
 
-    const previousRevenue = previousOrders.reduce(
-      (sum, order) => sum + Number(order.total),
-      0
-    )
+    const previousRevenue = Number(previousRevenueResult._sum.total || 0)
+    const previousOrders = previousRevenueResult._count.id
 
     const trend =
       previousRevenue > 0
@@ -145,7 +122,7 @@ export async function GET(req: Request) {
       trend: trend.toFixed(1),
       comparison: {
         previousRevenue,
-        previousOrders: previousOrders.length,
+        previousOrders,
       },
     })
   } catch (error) {

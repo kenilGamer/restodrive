@@ -72,8 +72,8 @@ export default function NewMenuPage() {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Menus
         </Link>
-        <h1 className="text-3xl font-bold text-gray-900">Create New Menu</h1>
-        <p className="mt-2 text-sm text-gray-600">
+        <h1 className="text-3xl font-bold text-white">Create New Menu</h1>
+        <p className="mt-2 text-sm text-white">
           Create a new menu for your restaurant
         </p>
       </div>

@@ -37,13 +37,13 @@ export function PeakHoursHeatmap({ data }: PeakHoursHeatmapProps) {
             className={`${getIntensity(item.orderCount)} rounded p-3 text-center transition-all hover:scale-105`}
             title={`${formatHour(item.hour)}: ${item.orderCount} orders, ${formatCurrency(item.revenue)}`}
           >
-            <div className="text-xs font-medium text-white">
+            <div className="text-xs font-medium text-black">
               {formatHour(item.hour)}
             </div>
-            <div className="mt-1 text-sm font-bold text-white">
+            <div className="mt-1 text-sm font-bold text-black">
               {item.orderCount}
             </div>
-            <div className="text-xs text-white/80">
+            <div className="text-xs text-black/80">
               {formatCurrency(item.revenue)}
             </div>
           </div>

@@ -1,0 +1,53 @@
+{
+  "database": {
+    "name": "restodrive_db",
+    "host": "localhost",
+    "port": 5432,
+    "adminUser": "postgres"
+  },
+  "users": [
+    {
+      "username": "restodrive_user",
+      "password": "change_me_secure_password",
+      "permissions": ["CONNECT", "CREATE", "USAGE"],
+      "databases": ["restodrive_db"]
+    }
+  ],
+  "tables": [
+    {
+      "name": "example_table",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "UUID",
+          "default": "gen_random_uuid()",
+          "constraints": ["PRIMARY KEY", "NOT NULL"]
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP",
+          "default": "CURRENT_TIMESTAMP",
+          "constraints": ["NOT NULL"]
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_example_created_at",
+          "columns": ["created_at"],
+          "unique": false
+        }
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "name": "grant_permissions",
+      "type": "GRANT",
+      "user": "restodrive_user",
+      "database": "restodrive_db",
+      "permissions": ["ALL PRIVILEGES"]
+    }
+  ]
+}
+
