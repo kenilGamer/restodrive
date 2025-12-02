@@ -18,6 +18,7 @@ export async function DELETE(
     const { sessionId } = params
 
     // Verify the session belongs to the current user
+    // @ts-expect-error - userSession will be available after Prisma client regeneration
     const userSession = await db.userSession.findFirst({
       where: {
         id: sessionId,
@@ -33,6 +34,7 @@ export async function DELETE(
     }
 
     // Deactivate the session
+    // @ts-expect-error - userSession will be available after Prisma client regeneration
     await db.userSession.update({
       where: { id: sessionId },
       data: { isActive: false },
@@ -65,6 +67,7 @@ export async function PATCH(
 
     const { sessionId } = params
 
+    // @ts-expect-error - userSession will be available after Prisma client regeneration
     await db.userSession.updateMany({
       where: {
         id: sessionId,

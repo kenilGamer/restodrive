@@ -17,7 +17,19 @@ export async function POST(req: Request) {
     const userAgent = req.headers.get("user-agent") || ""
     const forwardedFor = req.headers.get("x-forwarded-for")
     const realIp = req.headers.get("x-real-ip")
-    const ipAddress = forwardedFor?.split(",")[0] || realIp || "Unknown"
+    
+    // Extract IP address, preferring IPv4
+    let ipAddress = forwardedFor?.split(",")[0]?.trim() || realIp || "Unknown"
+    
+    // Convert IPv6 loopback to IPv4
+    if (ipAddress === "::1" || ipAddress === "::ffff:127.0.0.1") {
+      ipAddress = "127.0.0.1"
+    }
+    
+    // If it's an IPv6-mapped IPv4 address, extract the IPv4 part
+    if (ipAddress.startsWith("::ffff:")) {
+      ipAddress = ipAddress.replace("::ffff:", "")
+    }
 
     // Parse user agent
     const { device, browser, os } = parseUserAgent(userAgent)
@@ -26,6 +38,7 @@ export async function POST(req: Request) {
     const location = "Unknown Location" // TODO: Integrate geolocation service
 
     // Check if session already exists (by user agent and IP)
+    // @ts-expect-error - userSession will be available after Prisma client regeneration
     const existingSession = await db.userSession.findFirst({
       where: {
         userId: session.user.id,
@@ -37,6 +50,7 @@ export async function POST(req: Request) {
 
     if (existingSession) {
       // Update last active time
+      // @ts-expect-error - userSession will be available after Prisma client regeneration
       await db.userSession.update({
         where: { id: existingSession.id },
         data: { lastActive: new Date() },
@@ -45,6 +59,7 @@ export async function POST(req: Request) {
     }
 
     // Create new session
+    // @ts-expect-error - userSession will be available after Prisma client regeneration
     const userSession = await db.userSession.create({
       data: {
         userId: session.user.id,

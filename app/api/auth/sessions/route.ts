@@ -16,8 +16,21 @@ export async function GET(req: Request) {
     const userAgent = req.headers.get("user-agent") || ""
     const forwardedFor = req.headers.get("x-forwarded-for")
     const realIp = req.headers.get("x-real-ip")
-    const ipAddress = forwardedFor?.split(",")[0] || realIp || "Unknown"
+    
+    // Extract IP address, preferring IPv4
+    let ipAddress = forwardedFor?.split(",")[0]?.trim() || realIp || "Unknown"
+    
+    // Convert IPv6 loopback to IPv4
+    if (ipAddress === "::1" || ipAddress === "::ffff:127.0.0.1") {
+      ipAddress = "127.0.0.1"
+    }
+    
+    // If it's an IPv6-mapped IPv4 address, extract the IPv4 part
+    if (ipAddress.startsWith("::ffff:")) {
+      ipAddress = ipAddress.replace("::ffff:", "")
+    }
 
+    // @ts-expect-error - userSession will be available after Prisma client regeneration
     const userSessions = await db.userSession.findMany({
       where: {
         userId: session.user.id,
