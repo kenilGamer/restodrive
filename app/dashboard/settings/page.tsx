@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Save, Bell, CreditCard, Shield, Building2, User } from "lucide-react"
 import { SlugDisplay } from "@/components/settings/slug-display"
+import { RestaurantSettingsForm } from "@/components/settings/restaurant-settings-form"
 
 export default async function SettingsPage() {
   const session = await getServerSession(authOptions)
@@ -129,48 +130,11 @@ export default async function SettingsPage() {
                 Configure your restaurant details and branding
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="restaurantName" className="text-gray-400">Restaurant Name</Label>
-                <Input
-                  id="restaurantName"
-                  defaultValue={restaurant.name}
-                  className="bg-[#0D0D0D] border-[#2A2A2A] text-white"
-                />
-              </div>
+            <CardContent>
               <SlugDisplay slug={restaurant.slug} />
-              <div className="space-y-2">
-                <Label htmlFor="description" className="text-gray-400">Description</Label>
-                <textarea
-                  id="description"
-                  defaultValue={restaurant.description || ""}
-                  rows={4}
-                  className="w-full px-4 py-3 bg-[#0D0D0D] border border-[#2A2A2A] rounded-[12px] text-white placeholder:text-gray-500 focus:outline-none focus:border-[#C97AFF] transition-colors resize-none"
-                />
+              <div className="mt-6">
+                <RestaurantSettingsForm restaurant={restaurant} />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="phone" className="text-gray-400">Phone</Label>
-                  <Input
-                    id="phone"
-                    defaultValue={restaurant.phone || ""}
-                    className="bg-[#0D0D0D] border-[#2A2A2A] text-white"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-gray-400">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    defaultValue={restaurant.email || ""}
-                    className="bg-[#0D0D0D] border-[#2A2A2A] text-white"
-                  />
-                </div>
-              </div>
-              <Button className="bg-gradient-to-r from-[#C97AFF] to-[#6B7CFF] hover:from-[#B869E6] hover:to-[#5B6CE6] text-white border-0">
-                <Save className="h-4 w-4 mr-2" />
-                Save Changes
-              </Button>
             </CardContent>
           </Card>
         </TabsContent>

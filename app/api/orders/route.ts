@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { generateOrderNumber } from "@/lib/utils"
+import { emitToRestaurant } from "@/lib/socket/emit"
 
 export async function GET(req: Request) {
   try {
@@ -66,6 +67,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    // Allow public orders (customers ordering from QR menu don't need to be authenticated)
     const session = await getServerSession(authOptions)
     const body = await req.json()
 
@@ -88,21 +90,21 @@ export async function POST(req: Request) {
       )
     }
 
-    // Verify restaurant ownership (if authenticated)
-    if (session?.user?.id) {
-      const restaurant = await db.restaurant.findFirst({
-        where: {
-          id: restaurantId,
-          ownerId: session.user.id,
-        },
-      })
+    // Verify restaurant exists and get settings (public orders allowed for QR menu)
+    const restaurant = await db.restaurant.findUnique({
+      where: { id: restaurantId },
+      select: {
+        id: true,
+        taxRate: true,
+        serviceCharge: true,
+      },
+    })
 
-      if (!restaurant) {
-        return NextResponse.json(
-          { error: "Restaurant not found" },
-          { status: 404 }
-        )
-      }
+    if (!restaurant) {
+      return NextResponse.json(
+        { error: "Restaurant not found" },
+        { status: 404 }
+      )
     }
 
     // Calculate totals
@@ -160,13 +162,9 @@ export async function POST(req: Request) {
       })
     }
 
-    // Get restaurant settings
-    const restaurant = await db.restaurant.findUnique({
-      where: { id: restaurantId },
-    })
-
-    const taxRate = Number(restaurant?.taxRate || 0.18)
-    const serviceCharge = Number(restaurant?.serviceCharge || 0.1)
+    // Use restaurant settings (already fetched above)
+    const taxRate = Number(restaurant.taxRate || 0.18)
+    const serviceCharge = Number(restaurant.serviceCharge || 0.1)
 
     const tax = subtotal * taxRate
     const service = subtotal * serviceCharge
@@ -213,7 +211,25 @@ export async function POST(req: Request) {
           },
         },
       },
+      include: {
+        items: {
+          include: {
+            menuItem: {
+              select: {
+                id: true,
+                name: true,
+                image: true,
+              },
+            },
+            variant: true,
+            modifiers: true,
+          },
+        },
+      },
     })
+
+    // Emit Socket.io event for new order
+    emitToRestaurant(restaurantId, "order:created", { order })
 
     return NextResponse.json({ order })
   } catch (error) {

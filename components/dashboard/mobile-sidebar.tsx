@@ -15,6 +15,8 @@ import {
   Settings,
   LogOut,
   X,
+  ChefHat,
+  Users,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 
@@ -23,6 +25,8 @@ const navigation = [
   { name: "Menu Builder", href: "/dashboard/menu", icon: UtensilsCrossed },
   { name: "QR Menus", href: "/dashboard/qr", icon: QrCode },
   { name: "Orders", href: "/dashboard/orders", icon: ShoppingCart },
+  { name: "Kitchen", href: "/dashboard/kitchen", icon: ChefHat },
+  { name: "Staff", href: "/dashboard/staff", icon: Users },
   { name: "Bookings", href: "/dashboard/bookings", icon: Calendar },
   { name: "POS", href: "/dashboard/pos", icon: CreditCard },
   { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },

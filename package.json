@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node server.js",
     "build": "next build",
-    "start": "next start",
+    "start": "node server.js",
     "lint": "eslint",
     "db:init": "tsx scripts/db-automation/cli.ts init",
     "db:generate": "tsx scripts/db-automation/cli.ts generate",
@@ -39,6 +39,8 @@
     "react-dom": "19.2.0",
     "react-hook-form": "^7.67.0",
     "recharts": "^3.5.1",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
     "tailwind-merge": "^3.4.0",
     "zod": "^4.1.13",
     "zustand": "^5.0.9"

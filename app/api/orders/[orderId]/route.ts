@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { emitToRestaurant } from "@/lib/socket/emit"
 
 export async function GET(
   req: Request,
@@ -104,11 +105,29 @@ export async function PATCH(
       include: {
         items: {
           include: {
-            menuItem: true,
+            menuItem: {
+              select: {
+                id: true,
+                name: true,
+                image: true,
+              },
+            },
+            variant: true,
+            modifiers: true,
+          },
+        },
+        restaurant: {
+          select: {
+            id: true,
           },
         },
       },
     })
+
+    // Emit Socket.io event for order update
+    if (order.restaurant) {
+      emitToRestaurant(order.restaurant.id, "order:updated", { order })
+    }
 
     return NextResponse.json({ order })
   } catch (error) {

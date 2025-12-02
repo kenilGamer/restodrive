@@ -7,6 +7,7 @@ import { ShoppingCart, X, Plus, Minus, Sparkles } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 import type { Restaurant, MenuWithCategories } from "@/types"
 import Image from "next/image"
+import { CheckoutModal } from "@/components/checkout/checkout-modal"
 
 interface QRMenuViewProps {
   restaurant: Restaurant
@@ -20,6 +21,7 @@ export function QRMenuView({ restaurant, menu }: QRMenuViewProps) {
   const [cart, setCart] = useState<any[]>([])
   const [showCart, setShowCart] = useState(false)
   const [selectedItem, setSelectedItem] = useState<any | null>(null)
+  const [showCheckout, setShowCheckout] = useState(false)
 
   const addToCart = (item: any) => {
     setCart([...cart, { ...item, quantity: 1 }])
@@ -294,6 +296,10 @@ export function QRMenuView({ restaurant, menu }: QRMenuViewProps) {
                       </span>
                     </div>
                     <Button
+                      onClick={() => {
+                        setShowCart(false)
+                        setShowCheckout(true)
+                      }}
                       className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white border-0 shadow-[0_0_20px_rgba(6,182,212,0.5)] py-6 text-lg font-semibold"
                       size="lg"
                     >
@@ -375,6 +381,21 @@ export function QRMenuView({ restaurant, menu }: QRMenuViewProps) {
           </Card>
         </div>
       )}
+
+      {/* Checkout Modal */}
+      <CheckoutModal
+        isOpen={showCheckout}
+        onClose={() => setShowCheckout(false)}
+        cart={cart}
+        restaurantId={restaurant.id}
+        restaurantName={restaurant.name}
+        currency={restaurant.currency || "INR"}
+        onOrderComplete={(orderId) => {
+          setCart([])
+          setShowCart(false)
+          alert(`Order #${orderId} placed successfully!`)
+        }}
+      />
     </div>
   )
 }
