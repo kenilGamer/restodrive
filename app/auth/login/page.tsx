@@ -43,6 +43,16 @@ export default function LoginPage() {
       if (result?.error) {
         setError("Invalid email or password")
       } else {
+        // Track session after successful login
+        try {
+          await fetch("/api/auth/sessions/track", {
+            method: "POST",
+          })
+        } catch (err) {
+          // Silently fail - session tracking is not critical
+          console.error("Failed to track session:", err)
+        }
+        
         router.push(callbackUrl)
         router.refresh()
       }

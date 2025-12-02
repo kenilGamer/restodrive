@@ -19,20 +19,23 @@ datasource db {
 // ============================================
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  emailVerified DateTime?
-  name          String?
-  password      String?   // Hashed password
-  image         String?
-  role          UserRole  @default(OWNER)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                String    @id @default(cuid())
+  email             String    @unique
+  emailVerified     DateTime?
+  name              String?
+  password          String?   // Hashed password
+  image             String?
+  role              UserRole  @default(OWNER)
+  twoFactorSecret   String?   // TOTP secret for 2FA
+  twoFactorEnabled  Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   // Relations
-  restaurants   Restaurant[]
-  sessions      Session[]
-  accounts      Account[]
+  restaurants       Restaurant[]
+  sessions          Session[]
+  accounts          Account[]
+  userSessions      UserSession[]
 
   @@map("users")
 }
@@ -73,6 +76,26 @@ model Session {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("sessions")
+}
+
+model UserSession {
+  id          String   @id @default(cuid())
+  userId      String
+  sessionToken String? // JWT token identifier or session token
+  device      String?  // Device type (Windows, Mac, iPhone, etc.)
+  browser     String?  // Browser name (Chrome, Firefox, Safari, etc.)
+  os          String?  // Operating system
+  ipAddress   String?  // IP address
+  location    String?  // Location (city, country)
+  userAgent   String?  @db.Text // Full user agent string
+  isActive    Boolean  @default(true)
+  lastActive  DateTime @default(now())
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([sessionToken])
+  @@map("user_sessions")
 }
 
 model VerificationToken {

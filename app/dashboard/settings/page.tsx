@@ -10,6 +10,9 @@ import { Label } from "@/components/ui/label"
 import { Save, Bell, CreditCard, Shield, Building2, User } from "lucide-react"
 import { SlugDisplay } from "@/components/settings/slug-display"
 import { RestaurantSettingsForm } from "@/components/settings/restaurant-settings-form"
+import { PaymentSettingsForm } from "@/components/settings/payment-settings-form"
+import { NotificationSettingsForm } from "@/components/settings/notification-settings-form"
+import { SecuritySettingsForm } from "@/components/settings/security-settings-form"
 
 export default async function SettingsPage() {
   const session = await getServerSession(authOptions)
@@ -39,6 +42,9 @@ export default async function SettingsPage() {
     )
   }
 
+  // Check if user is admin/owner
+  const isAdmin = session.user.role === "OWNER"
+
   return (
     <div className="space-y-6">
       <div className="mb-6">
@@ -64,13 +70,15 @@ export default async function SettingsPage() {
             <Building2 className="h-4 w-4 mr-2" />
             Restaurant
           </TabsTrigger>
-          <TabsTrigger
-            value="payment"
-            className="data-[state=active]:bg-[#FCD34D] data-[state=active]:text-[#0D0D0D] text-gray-400"
-          >
-            <CreditCard className="h-4 w-4 mr-2" />
-            Payment
-          </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger
+              value="payment"
+              className="data-[state=active]:bg-[#FCD34D] data-[state=active]:text-[#0D0D0D] text-gray-400"
+            >
+              <CreditCard className="h-4 w-4 mr-2" />
+              Payment
+            </TabsTrigger>
+          )}
           <TabsTrigger
             value="notifications"
             className="data-[state=active]:bg-[#FCD34D] data-[state=active]:text-[#0D0D0D] text-gray-400"
@@ -133,83 +141,31 @@ export default async function SettingsPage() {
             <CardContent>
               <SlugDisplay slug={restaurant.slug} />
               <div className="mt-6">
-                <RestaurantSettingsForm restaurant={restaurant} />
+                <RestaurantSettingsForm
+                  restaurant={{
+                    ...restaurant,
+                    taxRate: restaurant.taxRate ? Number(restaurant.taxRate) : null,
+                    serviceCharge: restaurant.serviceCharge ? Number(restaurant.serviceCharge) : null,
+                    minOrderValue: restaurant.minOrderValue ? Number(restaurant.minOrderValue) : null,
+                  }}
+                />
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="payment" className="mt-6">
-          <Card className="bg-[#1A1A1A] border-[#2A2A2A] rounded-[18px] shadow-glow">
-            <CardHeader>
-              <CardTitle className="text-white">Payment Settings</CardTitle>
-              <CardDescription className="text-gray-400">
-                Configure payment gateways and methods
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-400">
-                Payment gateway integration coming soon. Connect Stripe, Razorpay, and other payment providers.
-              </p>
-            </CardContent>
-          </Card>
-        </TabsContent>
+        {isAdmin && (
+          <TabsContent value="payment" className="mt-6">
+            <PaymentSettingsForm restaurantId={restaurant.id} />
+          </TabsContent>
+        )}
 
         <TabsContent value="notifications" className="mt-6">
-          <Card className="bg-[#1A1A1A] border-[#2A2A2A] rounded-[18px] shadow-glow">
-            <CardHeader>
-              <CardTitle className="text-white">Notification Settings</CardTitle>
-              <CardDescription className="text-gray-400">
-                Manage email and SMS notifications
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-400">
-                Notification preferences coming soon. Configure email and SMS alerts for orders, bookings, and more.
-              </p>
-            </CardContent>
-          </Card>
+          <NotificationSettingsForm restaurantId={restaurant.id} />
         </TabsContent>
 
         <TabsContent value="security" className="mt-6">
-          <Card className="bg-[#1A1A1A] border-[#2A2A2A] rounded-[18px] shadow-glow">
-            <CardHeader>
-              <CardTitle className="text-white">Security Settings</CardTitle>
-              <CardDescription className="text-gray-400">
-                Manage password and security preferences
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="currentPassword" className="text-gray-400">Current Password</Label>
-                <Input
-                  id="currentPassword"
-                  type="password"
-                  className="bg-[#0D0D0D] border-[#2A2A2A] text-white"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="newPassword" className="text-gray-400">New Password</Label>
-                <Input
-                  id="newPassword"
-                  type="password"
-                  className="bg-[#0D0D0D] border-[#2A2A2A] text-white"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="text-gray-400">Confirm New Password</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  className="bg-[#0D0D0D] border-[#2A2A2A] text-white"
-                />
-              </div>
-              <Button className="bg-gradient-to-r from-[#C97AFF] to-[#6B7CFF] hover:from-[#B869E6] hover:to-[#5B6CE6] text-white border-0">
-                <Save className="h-4 w-4 mr-2" />
-                Update Password
-              </Button>
-            </CardContent>
-          </Card>
+          <SecuritySettingsForm />
         </TabsContent>
       </Tabs>
     </div>
