@@ -1,0 +1,92 @@
+/* Luxury Gold Theme - CSS Variables */
+
+:root {
+  /* Primary Colors */
+  --gold-400: #F6C440;
+  --gold-500: #E5B030;
+  --black-300: #0D0D0D;
+  --brown-800: #2B1E14;
+  --champagne-300: #F8F2E7;
+  --graphite-400: #1F1F1F;
+  --emerald: #2ECC71;
+  --error-red: #E74C3C;
+
+  /* Light Mode */
+  --bg-primary: #F8F2E7;
+  --bg-secondary: #FFFFFF;
+  --bg-tertiary: #F5EDE0;
+  --bg-elevated: #FFFFFF;
+  --bg-overlay: rgba(13, 13, 13, 0.6);
+
+  --text-primary: #0D0D0D;
+  --text-secondary: #1F1F1F;
+  --text-tertiary: #4A4A4A;
+
+  --border-light: rgba(246, 196, 64, 0.2);
+  --border-medium: rgba(246, 196, 64, 0.4);
+  --border-strong: rgba(246, 196, 64, 0.6);
+}
+
+[data-theme="dark"] {
+  /* Dark Mode */
+  --bg-primary: #0D0D0D;
+  --bg-secondary: #1F1F1F;
+  --bg-tertiary: #252525;
+  --bg-elevated: #2B1E14;
+  --bg-overlay: rgba(0, 0, 0, 0.8);
+
+  --text-primary: #F8F2E7;
+  --text-secondary: #E8DED4;
+  --text-tertiary: #B89A7D;
+
+  --border-light: rgba(246, 196, 64, 0.3);
+  --border-medium: rgba(246, 196, 64, 0.5);
+  --border-strong: rgba(246, 196, 64, 0.7);
+}
+
+/* Luxury Button Styles */
+.btn-luxury-primary {
+  background: linear-gradient(180deg, #F6C440 0%, #E5B030 100%);
+  color: #0D0D0D;
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(246, 196, 64, 0.3);
+  transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+  border: none;
+  cursor: pointer;
+}
+
+.btn-luxury-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(246, 196, 64, 0.4);
+}
+
+.btn-luxury-primary:active {
+  transform: translateY(0);
+}
+
+/* Luxury Card Styles */
+.card-luxury {
+  background: var(--bg-elevated);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 8px rgba(13, 13, 13, 0.12);
+  border: 1px solid var(--border-light);
+  transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.card-luxury:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(246, 196, 64, 0.5);
+}
+
+/* Gold Glow Effect */
+.glow-gold {
+  box-shadow: 0 0 20px rgba(246, 196, 64, 0.4);
+}
+
+.glow-gold-strong {
+  box-shadow: 0 0 30px rgba(246, 196, 64, 0.6);
+}
+
