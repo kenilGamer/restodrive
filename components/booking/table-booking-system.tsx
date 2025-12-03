@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Calendar, Clock, Users, MapPin, CheckCircle2, XCircle, Plus } from "lucide-react"
 import { formatDate } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
+import { ReservationCalendar } from "./reservation-calendar"
 
 interface TableBookingSystemProps {
   restaurantId: string
@@ -28,7 +29,13 @@ interface Reservation {
   guestCount: number
   customerName: string
   customerPhone: string
-  status: string
+  status: "PENDING" | "CONFIRMED" | "SEATED" | "COMPLETED" | "CANCELLED" | "NO_SHOW"
+  table?: {
+    number: string
+    capacity: number
+  } | null
+  specialRequests?: string | null
+  occasion?: string | null
 }
 
 export function TableBookingSystem({ restaurantId }: TableBookingSystemProps) {
@@ -57,10 +64,24 @@ export function TableBookingSystem({ restaurantId }: TableBookingSystemProps) {
 
   const fetchReservations = async () => {
     try {
-      const res = await fetch(`/api/bookings?restaurantId=${restaurantId}&date=${selectedDate}`)
+      // Fetch reservations for a date range (current month)
+      const startDate = new Date(selectedDate)
+      startDate.setDate(1) // First day of month
+      const endDate = new Date(startDate)
+      endDate.setMonth(endDate.getMonth() + 1)
+      endDate.setDate(0) // Last day of month
+      
+      const res = await fetch(
+        `/api/bookings?restaurantId=${restaurantId}&startDate=${startDate.toISOString().split("T")[0]}&endDate=${endDate.toISOString().split("T")[0]}`
+      )
       if (res.ok) {
         const data = await res.json()
-        setReservations(data.reservations || [])
+        // Format dates to YYYY-MM-DD for consistency
+        const formattedReservations = (data.reservations || []).map((r: any) => ({
+          ...r,
+          date: new Date(r.date).toISOString().split("T")[0],
+        }))
+        setReservations(formattedReservations)
       }
     } catch (error) {
       console.error("Error fetching reservations:", error)
@@ -236,53 +257,21 @@ export function TableBookingSystem({ restaurantId }: TableBookingSystemProps) {
           </div>
         </div>
       ) : (
-        /* Calendar View */
-        <Card className="bg-[#1A1A1A] border-[#2A2A2A] rounded-[18px] shadow-glow">
-          <CardHeader>
-            <CardTitle className="text-white">Reservation Calendar</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-7 gap-2">
-              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-                <div key={day} className="text-center text-sm font-semibold text-gray-400 py-2">
-                  {day}
-                </div>
-              ))}
-              {Array.from({ length: 35 }).map((_, index) => {
-                const date = new Date(selectedDate)
-                date.setDate(date.getDate() - date.getDay() + index)
-                const dateStr = date.toISOString().split("T")[0]
-                const dayReservations = reservations.filter((r) => r.date === dateStr)
-
-                return (
-                  <div
-                    key={index}
-                    className={`aspect-square rounded-[8px] border border-[#2A2A2A] p-2 hover:border-[#C97AFF]/50 transition-colors cursor-pointer ${
-                      dateStr === selectedDate ? "bg-[#FCD34D]/20 border-[#FCD34D]" : "bg-[#0D0D0D]"
-                    }`}
-                    onClick={() => setSelectedDate(dateStr)}
-                  >
-                    <div className="text-xs text-gray-400 mb-1">{date.getDate()}</div>
-                    {dayReservations.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {dayReservations.slice(0, 2).map((res) => (
-                          <div
-                            key={res.id}
-                            className="w-1.5 h-1.5 rounded-full bg-[#C97AFF]"
-                            title={res.customerName}
-                          />
-                        ))}
-                        {dayReservations.length > 2 && (
-                          <div className="text-[8px] text-gray-500">+{dayReservations.length - 2}</div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          </CardContent>
-        </Card>
+        /* Enhanced Calendar View */
+        <ReservationCalendar
+          restaurantId={restaurantId}
+          reservations={reservations.map((r) => ({
+            ...r,
+            date: r.date.split("T")[0], // Ensure date is in YYYY-MM-DD format
+          }))}
+          onDateSelect={(date) => {
+            setSelectedDate(date)
+          }}
+          onReservationClick={(reservation) => {
+            // Handle reservation click - could open detail modal
+            console.log("Reservation clicked:", reservation)
+          }}
+        />
       )}
     </div>
   )

@@ -3,160 +3,130 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ShoppingCart, X, Plus, Minus, Sparkles, Sun, Moon, Download, Share2 } from "lucide-react"
+import { ShoppingCart, X, Plus, Minus, Sun, Moon, Search } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 import type { Restaurant, MenuWithCategories } from "@/types"
 import Image from "next/image"
 import { CheckoutModal } from "@/components/checkout/checkout-modal"
-import { downloadQRCode } from "@/lib/utils/download"
+import { useCartStore } from "@/store/cart-store"
+import { useRouter } from "next/navigation"
 
-interface QRMenuViewProps {
+interface CustomerOrderingFlowProps {
   restaurant: Restaurant
   menu: MenuWithCategories
 }
 
-export function QRMenuView({ restaurant, menu }: QRMenuViewProps) {
+export function CustomerOrderingFlow({
+  restaurant,
+  menu,
+}: CustomerOrderingFlowProps) {
+  const router = useRouter()
+  const {
+    items: cartItems,
+    addItem,
+    removeItem,
+    updateQuantity,
+    clearCart,
+    setRestaurant,
+    getTotal,
+    getItemCount,
+  } = useCartStore()
+
   const [selectedCategory, setSelectedCategory] = useState<string | null>(
     menu.categories[0]?.id || null
   )
-  const [cart, setCart] = useState<any[]>([])
   const [showCart, setShowCart] = useState(false)
   const [selectedItem, setSelectedItem] = useState<any | null>(null)
   const [showCheckout, setShowCheckout] = useState(false)
-  const [downloadingQR, setDownloadingQR] = useState(false)
-  
-  // Theme state - detect system preference initially
+  const [searchQuery, setSearchQuery] = useState("")
+
+  // Theme state
   const [theme, setTheme] = useState<"light" | "dark">("dark")
-  
+
+  // Set restaurant in cart store
   useEffect(() => {
-    // Check localStorage first, then system preference
-    const savedTheme = localStorage.getItem("qr-menu-theme") as "light" | "dark" | null
+    setRestaurant(restaurant.id)
+  }, [restaurant.id, setRestaurant])
+
+  // Theme detection
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("order-theme") as "light" | "dark" | null
     if (savedTheme) {
       setTheme(savedTheme)
     } else {
-      // Detect system preference
       const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches
       setTheme(prefersDark ? "dark" : "light")
     }
   }, [])
-  
+
   useEffect(() => {
-    // Apply theme to document
     document.documentElement.setAttribute("data-theme", theme)
-    localStorage.setItem("qr-menu-theme", theme)
+    localStorage.setItem("order-theme", theme)
   }, [theme])
-  
+
   const toggleTheme = () => {
-    setTheme(prev => prev === "dark" ? "light" : "dark")
+    setTheme((prev) => (prev === "dark" ? "light" : "dark"))
   }
 
-  const handleDownloadQR = async () => {
-    // Get current page URL as QR code data
-    const currentUrl = window.location.href
-    
-    setDownloadingQR(true)
-    try {
-      // Generate QR code image URL for current page
-      const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(currentUrl)}`
-      
-      await downloadQRCode(qrImageUrl, restaurant.slug || "menu", restaurant.name)
-    } catch (error: any) {
-      console.error("Download error:", error)
-      alert(error.message || "Failed to download QR code. Please try again.")
-    } finally {
-      setDownloadingQR(false)
-    }
-  }
-
-  const handleShareQR = async () => {
-    const currentUrl = window.location.href
-    
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `${restaurant.name} - Digital Menu`,
-          text: `Check out ${restaurant.name}'s digital menu`,
-          url: currentUrl,
-        })
-      } catch (error: any) {
-        if (error.name !== "AbortError") {
-          console.error("Share error:", error)
-        }
-      }
-    } else {
-      // Fallback: Copy to clipboard
-      try {
-        await navigator.clipboard.writeText(currentUrl)
-        alert("Menu link copied to clipboard!")
-      } catch (error) {
-        console.error("Copy error:", error)
-        alert("Failed to copy link. Please copy manually: " + currentUrl)
-      }
-    }
-  }
-
-  const addToCart = (item: any) => {
-    setCart([...cart, { ...item, quantity: 1 }])
+  const handleAddToCart = (item: any) => {
+    addItem({
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      price: Number(item.price),
+      quantity: 1,
+      image: item.image,
+      variantId: item.variantId,
+      modifiers: item.modifiers || [],
+    })
     setShowCart(true)
   }
 
-  const removeFromCart = (index: number) => {
-    setCart(cart.filter((_, i) => i !== index))
-  }
-
-  const updateCartQuantity = (index: number, quantity: number) => {
-    if (quantity <= 0) {
-      removeFromCart(index)
-      return
-    }
-    const newCart = [...cart]
-    newCart[index].quantity = quantity
-    setCart(newCart)
-  }
-
-  const cartTotal = cart.reduce(
-    (sum, item) => sum + Number(item.price) * item.quantity,
-    0
-  )
-
-  const currentCategory = menu.categories.find(
-    (c) => c.id === selectedCategory
-  )
-
+  const cartTotal = getTotal()
+  const cartCount = getItemCount()
   const isDark = theme === "dark"
-  
-  return (
-    <div className={`min-h-screen relative overflow-hidden transition-colors duration-300 ${
-      isDark 
-        ? "bg-black text-white" 
-        : "bg-gradient-to-br from-gray-50 to-gray-100 text-gray-900"
-    }`}>
-      {/* Animated Background */}
-      <div className={`fixed inset-0 transition-opacity duration-300 ${
-        isDark
-          ? "bg-[linear-gradient(to_right,#1a1a1a_1px,transparent_1px),linear-gradient(to_bottom,#1a1a1a_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-20"
-          : "bg-[linear-gradient(to_right,#e5e7eb_1px,transparent_1px),linear-gradient(to_bottom,#e5e7eb_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-10"
-      }`}></div>
-      <div className={`fixed top-0 left-1/4 w-96 h-96 rounded-full blur-[100px] transition-opacity duration-300 ${
-        isDark ? "bg-cyan-500/10" : "bg-cyan-200/20"
-      }`}></div>
-      <div className={`fixed bottom-0 right-1/4 w-96 h-96 rounded-full blur-[100px] transition-opacity duration-300 ${
-        isDark ? "bg-purple-500/10" : "bg-purple-200/20"
-      }`}></div>
 
-      {/* Premium Header */}
-      <header className={`sticky top-0 z-50 backdrop-blur-xl border-b transition-colors duration-300 ${
-        isDark
-          ? "bg-black/80 border-white/10"
-          : "bg-white/80 border-gray-200/50"
-      }`}>
+  // Filter items by search query
+  const currentCategory = menu.categories.find((c) => c.id === selectedCategory)
+  const filteredItems = currentCategory?.items.filter((item) =>
+    searchQuery
+      ? item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.description?.toLowerCase().includes(searchQuery.toLowerCase())
+      : true
+  ) || []
+
+  return (
+    <div
+      className={`min-h-screen relative overflow-hidden transition-colors duration-300 ${
+        isDark ? "bg-black text-white" : "bg-gradient-to-br from-gray-50 to-gray-100 text-gray-900"
+      }`}
+    >
+      {/* Background */}
+      <div
+        className={`fixed inset-0 transition-opacity duration-300 ${
+          isDark
+            ? "bg-[linear-gradient(to_right,#1a1a1a_1px,transparent_1px),linear-gradient(to_bottom,#1a1a1a_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-20"
+            : "bg-[linear-gradient(to_right,#e5e7eb_1px,transparent_1px),linear-gradient(to_bottom,#e5e7eb_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-10"
+        }`}
+      ></div>
+
+      {/* Header */}
+      <header
+        className={`sticky top-0 z-50 backdrop-blur-xl border-b transition-colors duration-300 ${
+          isDark
+            ? "bg-black/80 border-white/10"
+            : "bg-white/80 border-gray-200/50"
+        }`}
+      >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-20 items-center justify-between">
             <div className="flex items-center gap-3">
               {restaurant.logo ? (
-                <div className={`relative w-12 h-12 rounded-xl overflow-hidden border transition-colors ${
-                  isDark ? "border-cyan-500/30" : "border-cyan-400/40"
-                }`}>
+                <div
+                  className={`relative w-12 h-12 rounded-xl overflow-hidden border transition-colors ${
+                    isDark ? "border-cyan-500/30" : "border-cyan-400/40"
+                  }`}
+                >
                   <Image
                     src={restaurant.logo}
                     alt={restaurant.name}
@@ -165,22 +135,30 @@ export function QRMenuView({ restaurant, menu }: QRMenuViewProps) {
                   />
                 </div>
               ) : (
-                <div className={`flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 border transition-colors ${
-                  isDark ? "border-cyan-500/30" : "border-cyan-400/40"
-                }`}>
-                  <Sparkles className="h-6 w-6 text-white" />
+                <div
+                  className={`flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 border transition-colors ${
+                    isDark ? "border-cyan-500/30" : "border-cyan-400/40"
+                  }`}
+                >
+                  <span className="text-white text-xl">🍽️</span>
                 </div>
               )}
               <div>
-                <h1 className={`text-xl font-orbitron font-bold transition-colors ${
-                  isDark ? "text-white" : "text-gray-900"
-                }`}>
+                <h1
+                  className={`text-xl font-bold transition-colors ${
+                    isDark ? "text-white" : "text-gray-900"
+                  }`}
+                >
                   {restaurant.name}
                 </h1>
                 {restaurant.description && (
-                  <p className={`text-sm transition-colors ${
-                    isDark ? "text-gray-400" : "text-gray-600"
-                  }`}>{restaurant.description}</p>
+                  <p
+                    className={`text-sm transition-colors ${
+                      isDark ? "text-gray-400" : "text-gray-600"
+                    }`}
+                  >
+                    {restaurant.description}
+                  </p>
                 )}
               </div>
             </div>
@@ -199,7 +177,8 @@ export function QRMenuView({ restaurant, menu }: QRMenuViewProps) {
               >
                 {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
               </Button>
-              {cart.length > 0 && (
+              {/* Cart Button */}
+              {cartCount > 0 && (
                 <Button
                   onClick={() => setShowCart(true)}
                   className={`relative border-0 transition-all ${
@@ -209,7 +188,7 @@ export function QRMenuView({ restaurant, menu }: QRMenuViewProps) {
                   }`}
                 >
                   <ShoppingCart className="h-5 w-5 mr-2" />
-                  Cart ({cart.length})
+                  Cart ({cartCount})
                   <span className="ml-2 font-semibold">
                     {formatCurrency(cartTotal, restaurant.currency || "INR")}
                   </span>
@@ -221,20 +200,47 @@ export function QRMenuView({ restaurant, menu }: QRMenuViewProps) {
       </header>
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+        {/* Search Bar */}
+        <div className="mb-6">
+          <div className="relative">
+            <Search
+              className={`absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 transition-colors ${
+                isDark ? "text-gray-500" : "text-gray-400"
+              }`}
+            />
+            <input
+              type="text"
+              placeholder="Search menu items..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={`w-full pl-12 pr-4 py-3 rounded-xl transition-colors ${
+                isDark
+                  ? "bg-[#1A1A1A] border border-white/10 text-white placeholder:text-gray-500 focus:border-cyan-500"
+                  : "bg-white border border-gray-200 text-gray-900 placeholder:text-gray-500 focus:border-cyan-400"
+              }`}
+            />
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Categories Sidebar */}
           <div className="lg:col-span-1">
             <div className="sticky top-28">
-              <h2 className={`text-lg font-orbitron font-bold mb-6 transition-colors ${
-                isDark ? "text-cyan-400" : "text-cyan-600"
-              }`}>
+              <h2
+                className={`text-lg font-bold mb-6 transition-colors ${
+                  isDark ? "text-cyan-400" : "text-cyan-600"
+                }`}
+              >
                 Categories
               </h2>
               <div className="space-y-2">
                 {menu.categories.map((category) => (
                   <button
                     key={category.id}
-                    onClick={() => setSelectedCategory(category.id)}
+                    onClick={() => {
+                      setSelectedCategory(category.id)
+                      setSearchQuery("")
+                    }}
                     className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-300 ${
                       selectedCategory === category.id
                         ? isDark
@@ -256,20 +262,28 @@ export function QRMenuView({ restaurant, menu }: QRMenuViewProps) {
           <div className="lg:col-span-3">
             {currentCategory && (
               <>
-                <h2 className={`text-3xl font-orbitron font-bold mb-8 bg-gradient-to-r bg-clip-text text-transparent transition-colors ${
-                  isDark
-                    ? "from-cyan-400 to-blue-400"
-                    : "from-cyan-600 to-blue-600"
-                }`}>
+                <h2
+                  className={`text-3xl font-bold mb-8 bg-gradient-to-r bg-clip-text text-transparent transition-colors ${
+                    isDark ? "from-cyan-400 to-blue-400" : "from-cyan-600 to-blue-600"
+                  }`}
+                >
                   {currentCategory.name}
                 </h2>
-                {!currentCategory.items || currentCategory.items.length === 0 ? (
+                {filteredItems.length === 0 ? (
                   <div className="text-center py-16">
-                    <p className="text-gray-400 text-lg">No items in this category yet</p>
+                    <p
+                      className={`text-lg transition-colors ${
+                        isDark ? "text-gray-400" : "text-gray-600"
+                      }`}
+                    >
+                      {searchQuery
+                        ? "No items found matching your search"
+                        : "No items in this category yet"}
+                    </p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {currentCategory.items.map((item) => (
+                    {filteredItems.map((item) => (
                       <Card
                         key={item.id}
                         className={`backdrop-blur-sm transition-all duration-300 cursor-pointer group overflow-hidden ${
@@ -294,42 +308,67 @@ export function QRMenuView({ restaurant, menu }: QRMenuViewProps) {
                         <CardContent className="p-6">
                           <div className="flex items-start justify-between mb-3">
                             <div className="flex-1">
-                              <h3 className={`font-orbitron font-bold text-xl mb-2 transition-colors ${
-                                isDark ? "text-white" : "text-gray-900"
-                              }`}>
+                              <h3
+                                className={`font-bold text-xl mb-2 transition-colors ${
+                                  isDark ? "text-white" : "text-gray-900"
+                                }`}
+                              >
                                 {item.name}
                               </h3>
                               {item.description && (
-                                <p className={`text-sm line-clamp-2 transition-colors ${
-                                  isDark ? "text-gray-400" : "text-gray-600"
-                                }`}>
+                                <p
+                                  className={`text-sm line-clamp-2 transition-colors ${
+                                    isDark ? "text-gray-400" : "text-gray-600"
+                                  }`}
+                                >
                                   {item.description}
                                 </p>
                               )}
                             </div>
-                            <p className={`text-2xl font-orbitron font-bold bg-gradient-to-r bg-clip-text text-transparent ml-4 transition-colors ${
-                              isDark
-                                ? "from-cyan-400 to-blue-400"
-                                : "from-cyan-600 to-blue-600"
-                            }`}>
-                              {formatCurrency(Number(item.price), restaurant.currency || "INR")}
+                            <p
+                              className={`text-2xl font-bold bg-gradient-to-r bg-clip-text text-transparent ml-4 transition-colors ${
+                                isDark
+                                  ? "from-cyan-400 to-blue-400"
+                                  : "from-cyan-600 to-blue-600"
+                              }`}
+                            >
+                              {formatCurrency(
+                                Number(item.price),
+                                restaurant.currency || "INR"
+                              )}
                             </p>
                           </div>
                           <div className="flex flex-wrap gap-2 mb-4">
                             {item.isVegetarian && (
-                              <span className="px-3 py-1 text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full">
+                              <span
+                                className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                                  isDark
+                                    ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                                    : "bg-emerald-100 text-emerald-700 border border-emerald-200"
+                                }`}
+                              >
                                 Veg
                               </span>
                             )}
                             {item.isVegan && (
-                              <span className="px-3 py-1 text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30 rounded-full">
+                              <span
+                                className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                                  isDark
+                                    ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                                    : "bg-green-100 text-green-700 border border-green-200"
+                                }`}
+                              >
                                 Vegan
                               </span>
                             )}
                             {item.dietaryTags.map((tag) => (
                               <span
                                 key={tag}
-                                className="px-3 py-1 text-xs font-medium bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-full capitalize"
+                                className={`px-3 py-1 text-xs font-medium rounded-full capitalize transition-colors ${
+                                  isDark
+                                    ? "bg-purple-500/20 text-purple-400 border border-purple-500/30"
+                                    : "bg-purple-100 text-purple-700 border border-purple-200"
+                                }`}
                               >
                                 {tag}
                               </span>
@@ -343,7 +382,7 @@ export function QRMenuView({ restaurant, menu }: QRMenuViewProps) {
                             }`}
                             onClick={(e) => {
                               e.stopPropagation()
-                              addToCart(item)
+                              handleAddToCart(item)
                             }}
                           >
                             Add to Cart
@@ -368,16 +407,22 @@ export function QRMenuView({ restaurant, menu }: QRMenuViewProps) {
             }`}
             onClick={() => setShowCart(false)}
           />
-          <div className={`fixed inset-y-0 right-0 w-full md:w-96 backdrop-blur-xl border-l z-50 overflow-y-auto transition-colors ${
-            isDark
-              ? "bg-black/95 border-white/10"
-              : "bg-white border-gray-200"
-          }`}>
+          <div
+            className={`fixed inset-y-0 right-0 w-full md:w-96 backdrop-blur-xl border-l z-50 overflow-y-auto transition-colors ${
+              isDark
+                ? "bg-black/95 border-white/10"
+                : "bg-white border-gray-200"
+            }`}
+          >
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className={`text-2xl font-orbitron font-bold transition-colors ${
-                  isDark ? "text-white" : "text-gray-900"
-                }`}>Your Cart</h2>
+                <h2
+                  className={`text-2xl font-bold transition-colors ${
+                    isDark ? "text-white" : "text-gray-900"
+                  }`}
+                >
+                  Your Cart
+                </h2>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -392,21 +437,27 @@ export function QRMenuView({ restaurant, menu }: QRMenuViewProps) {
                 </Button>
               </div>
 
-              {cart.length === 0 ? (
+              {cartItems.length === 0 ? (
                 <div className="text-center py-12">
-                  <ShoppingCart className={`h-16 w-16 mx-auto mb-4 transition-colors ${
-                    isDark ? "text-gray-600" : "text-gray-400"
-                  }`} />
-                  <p className={`transition-colors ${
-                    isDark ? "text-gray-400" : "text-gray-600"
-                  }`}>Your cart is empty</p>
+                  <ShoppingCart
+                    className={`h-16 w-16 mx-auto mb-4 transition-colors ${
+                      isDark ? "text-gray-600" : "text-gray-400"
+                    }`}
+                  />
+                  <p
+                    className={`transition-colors ${
+                      isDark ? "text-gray-400" : "text-gray-600"
+                    }`}
+                  >
+                    Your cart is empty
+                  </p>
                 </div>
               ) : (
                 <>
                   <div className="space-y-4 mb-6">
-                    {cart.map((item, index) => (
+                    {cartItems.map((item, index) => (
                       <div
-                        key={index}
+                        key={`${item.id}-${index}`}
                         className={`flex items-center justify-between p-4 rounded-xl transition-colors ${
                           isDark
                             ? "bg-white/5 border border-white/10"
@@ -414,33 +465,53 @@ export function QRMenuView({ restaurant, menu }: QRMenuViewProps) {
                         }`}
                       >
                         <div className="flex-1">
-                          <p className={`font-semibold transition-colors ${
-                            isDark ? "text-white" : "text-gray-900"
-                          }`}>{item.name}</p>
-                          <p className={`text-sm transition-colors ${
-                            isDark ? "text-gray-400" : "text-gray-600"
-                          }`}>
-                            {formatCurrency(Number(item.price), restaurant.currency || "INR")} each
+                          <p
+                            className={`font-semibold transition-colors ${
+                              isDark ? "text-white" : "text-gray-900"
+                            }`}
+                          >
+                            {item.name}
+                          </p>
+                          <p
+                            className={`text-sm transition-colors ${
+                              isDark ? "text-gray-400" : "text-gray-600"
+                            }`}
+                          >
+                            {formatCurrency(
+                              item.price,
+                              restaurant.currency || "INR"
+                            )}{" "}
+                            each
                           </p>
                         </div>
                         <div className="flex items-center gap-3">
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => updateCartQuantity(index, item.quantity - 1)}
-                            className="h-8 w-8 text-gray-400 hover:text-white hover:bg-white/10 border border-white/10"
+                            onClick={() =>
+                              updateQuantity(item.id, item.quantity - 1)
+                            }
+                            className={`h-8 w-8 border transition-colors ${
+                              isDark
+                                ? "text-gray-400 hover:text-white hover:bg-white/10 border-white/10"
+                                : "text-gray-600 hover:text-gray-900 hover:bg-gray-100 border-gray-200"
+                            }`}
                           >
                             <Minus className="h-4 w-4" />
                           </Button>
-                          <span className={`w-8 text-center font-semibold transition-colors ${
-                            isDark ? "text-white" : "text-gray-900"
-                          }`}>
+                          <span
+                            className={`w-8 text-center font-semibold transition-colors ${
+                              isDark ? "text-white" : "text-gray-900"
+                            }`}
+                          >
                             {item.quantity}
                           </span>
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => updateCartQuantity(index, item.quantity + 1)}
+                            onClick={() =>
+                              updateQuantity(item.id, item.quantity + 1)
+                            }
                             className={`h-8 w-8 border transition-colors ${
                               isDark
                                 ? "text-gray-400 hover:text-white hover:bg-white/10 border-white/10"
@@ -452,7 +523,7 @@ export function QRMenuView({ restaurant, menu }: QRMenuViewProps) {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => removeFromCart(index)}
+                            onClick={() => removeItem(item.id)}
                             className={`h-8 w-8 ml-2 transition-colors ${
                               isDark
                                 ? "text-red-400 hover:text-red-300 hover:bg-red-500/10"
@@ -466,18 +537,26 @@ export function QRMenuView({ restaurant, menu }: QRMenuViewProps) {
                     ))}
                   </div>
 
-                  <div className={`border-t pt-6 transition-colors ${
-                    isDark ? "border-white/10" : "border-gray-200"
-                  }`}>
+                  <div
+                    className={`border-t pt-6 transition-colors ${
+                      isDark ? "border-white/10" : "border-gray-200"
+                    }`}
+                  >
                     <div className="flex justify-between mb-6">
-                      <span className={`text-xl font-orbitron font-bold transition-colors ${
-                        isDark ? "text-white" : "text-gray-900"
-                      }`}>Total:</span>
-                      <span className={`text-2xl font-orbitron font-bold bg-gradient-to-r bg-clip-text text-transparent transition-colors ${
-                        isDark
-                          ? "from-cyan-400 to-blue-400"
-                          : "from-cyan-600 to-blue-600"
-                      }`}>
+                      <span
+                        className={`text-xl font-bold transition-colors ${
+                          isDark ? "text-white" : "text-gray-900"
+                        }`}
+                      >
+                        Total:
+                      </span>
+                      <span
+                        className={`text-2xl font-bold bg-gradient-to-r bg-clip-text text-transparent transition-colors ${
+                          isDark
+                            ? "from-cyan-400 to-blue-400"
+                            : "from-cyan-600 to-blue-600"
+                        }`}
+                      >
                         {formatCurrency(cartTotal, restaurant.currency || "INR")}
                       </span>
                     </div>
@@ -531,49 +610,74 @@ export function QRMenuView({ restaurant, menu }: QRMenuViewProps) {
                   />
                 </div>
               )}
-              <h2 className={`text-3xl font-orbitron font-bold mb-3 transition-colors ${
-                isDark ? "text-white" : "text-gray-900"
-              }`}>
+              <h2
+                className={`text-3xl font-bold mb-3 transition-colors ${
+                  isDark ? "text-white" : "text-gray-900"
+                }`}
+              >
                 {selectedItem.name}
               </h2>
               {selectedItem.description && (
-                <p className={`mb-6 leading-relaxed transition-colors ${
-                  isDark ? "text-gray-400" : "text-gray-600"
-                }`}>
+                <p
+                  className={`mb-6 leading-relaxed transition-colors ${
+                    isDark ? "text-gray-400" : "text-gray-600"
+                  }`}
+                >
                   {selectedItem.description}
                 </p>
               )}
               <div className="flex flex-wrap gap-2 mb-6">
                 {selectedItem.isVegetarian && (
-                  <span className="px-3 py-1 text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full">
+                  <span
+                    className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                      isDark
+                        ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                        : "bg-emerald-100 text-emerald-700 border border-emerald-200"
+                    }`}
+                  >
                     Vegetarian
                   </span>
                 )}
                 {selectedItem.isVegan && (
-                  <span className="px-3 py-1 text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30 rounded-full">
+                  <span
+                    className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                      isDark
+                        ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                        : "bg-green-100 text-green-700 border border-green-200"
+                    }`}
+                  >
                     Vegan
                   </span>
                 )}
                 {selectedItem.dietaryTags.map((tag: string) => (
                   <span
                     key={tag}
-                    className="px-3 py-1 text-xs font-medium bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-full capitalize"
+                    className={`px-3 py-1 text-xs font-medium rounded-full capitalize transition-colors ${
+                      isDark
+                        ? "bg-purple-500/20 text-purple-400 border border-purple-500/30"
+                        : "bg-purple-100 text-purple-700 border border-purple-200"
+                    }`}
                   >
                     {tag}
                   </span>
                 ))}
               </div>
               <div className="flex items-center justify-between">
-                <span className={`text-3xl font-orbitron font-bold bg-gradient-to-r bg-clip-text text-transparent transition-colors ${
-                  isDark
-                    ? "from-cyan-400 to-blue-400"
-                    : "from-cyan-600 to-blue-600"
-                }`}>
-                  {formatCurrency(Number(selectedItem.price), restaurant.currency || "INR")}
+                <span
+                  className={`text-3xl font-bold bg-gradient-to-r bg-clip-text text-transparent transition-colors ${
+                    isDark
+                      ? "from-cyan-400 to-blue-400"
+                      : "from-cyan-600 to-blue-600"
+                  }`}
+                >
+                  {formatCurrency(
+                    Number(selectedItem.price),
+                    restaurant.currency || "INR"
+                  )}
                 </span>
                 <Button
                   onClick={() => {
-                    addToCart(selectedItem)
+                    handleAddToCart(selectedItem)
                     setSelectedItem(null)
                   }}
                   className={`text-white border-0 transition-all ${
@@ -594,16 +698,19 @@ export function QRMenuView({ restaurant, menu }: QRMenuViewProps) {
       <CheckoutModal
         isOpen={showCheckout}
         onClose={() => setShowCheckout(false)}
-        cart={cart}
+        cart={cartItems}
         restaurantId={restaurant.id}
         restaurantName={restaurant.name}
         currency={restaurant.currency || "INR"}
         onOrderComplete={(orderId) => {
-          setCart([])
+          clearCart()
           setShowCart(false)
-          alert(`Order #${orderId} placed successfully!`)
+          setShowCheckout(false)
+          // Redirect to order tracking page
+          router.push(`/order/track/${orderId}`)
         }}
       />
     </div>
   )
 }
+

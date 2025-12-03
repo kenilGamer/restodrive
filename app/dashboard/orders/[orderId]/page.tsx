@@ -4,6 +4,9 @@ import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { OrderDetailView } from "@/components/orders/order-detail-view"
 
+// Cache for 10 seconds - order details need near real-time updates
+export const revalidate = 10
+
 export default async function OrderDetailPage({
   params,
 }: {
@@ -33,14 +36,10 @@ export default async function OrderDetailPage({
             },
           },
           variant: true,
-          modifiers: {
-            include: {
-              modifier: true,
-            },
-          },
+          modifiers: true,
         },
       },
-      payment: true,
+      payments: true,
       table: true,
       restaurant: true,
     },

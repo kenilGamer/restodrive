@@ -8,6 +8,9 @@ import { Plus } from "lucide-react"
 import Link from "next/link"
 import { MenuCard } from "@/components/menu/menu-card"
 
+// Cache for 60 seconds - menus don't change as frequently
+export const revalidate = 60
+
 export default async function MenuPage() {
   const session = await getServerSession(authOptions)
 
@@ -15,8 +18,10 @@ export default async function MenuPage() {
     redirect("/auth/login")
   }
 
+  // Optimize: Only fetch first restaurant and limit menu includes
   const restaurants = await db.restaurant.findMany({
     where: { ownerId: session.user.id },
+    take: 1, // Only need first restaurant
     include: {
       menus: {
         include: {

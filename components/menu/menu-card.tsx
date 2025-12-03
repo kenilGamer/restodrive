@@ -12,7 +12,7 @@ interface MenuCardProps {
     name: string
     version: number
     isActive: boolean
-    _count: {
+    _count?: {
       categories: number
     }
   }
@@ -49,7 +49,7 @@ export function MenuCard({ menu, index, restaurantSlug }: MenuCardProps) {
             )}
           </div>
           <CardDescription className="text-gray-400">
-            Version {menu.version} • {menu._count.categories} categories
+            Version {menu.version} • {menu._count?.categories ?? 0} categories
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">

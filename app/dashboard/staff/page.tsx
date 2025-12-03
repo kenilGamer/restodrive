@@ -4,6 +4,9 @@ import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { StaffManagement } from "@/components/staff/staff-management"
 
+// Cache for 60 seconds - staff changes infrequently
+export const revalidate = 60
+
 export default async function StaffPage() {
   const session = await getServerSession(authOptions)
 
@@ -11,8 +14,10 @@ export default async function StaffPage() {
     redirect("/auth/login")
   }
 
+  // Optimize: Only fetch first restaurant
   const restaurants = await db.restaurant.findMany({
     where: { ownerId: session.user.id },
+    take: 1, // Only need first restaurant
   })
 
   const restaurant = restaurants[0]
@@ -28,7 +33,7 @@ export default async function StaffPage() {
     )
   }
 
-  // Fetch branches for the restaurant
+  // Fetch branches for the restaurant (optimized with select)
   const branches = await db.branch.findMany({
     where: { restaurantId: restaurant.id },
     select: {

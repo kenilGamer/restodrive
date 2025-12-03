@@ -20,8 +20,10 @@ export default async function AnalyticsPage({
     redirect("/auth/login")
   }
 
+  // Optimize: Only fetch first restaurant
   const restaurants = await db.restaurant.findMany({
     where: { ownerId: session.user.id },
+    take: 1, // Only need first restaurant
   })
 
   const restaurant = restaurants[0]

@@ -2,6 +2,7 @@ import { db } from "@/lib/db"
 import { notFound } from "next/navigation"
 import { QRMenuView } from "@/components/qr/menu-view"
 import { AlertCircle } from "lucide-react"
+import { serializeRestaurantWithMenus } from "@/lib/utils/serialize"
 
 export default async function QRMenuPage({
   params,
@@ -100,8 +101,21 @@ export default async function QRMenuPage({
     }).catch(console.error)
   }
 
+  // Serialize Decimal fields to numbers for Client Component
+  // Prisma Decimal objects cannot be serialized to Client Components
+  const serializedRestaurant = serializeRestaurantWithMenus(restaurant)
+  const serializedMenu = serializedRestaurant.menus[0]
+
+  // Debug: Log menu structure (only in development)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Menu categories count:', serializedMenu?.categories?.length)
+    serializedMenu?.categories?.forEach((cat, idx) => {
+      console.log(`Category ${idx}: ${cat.name}, items: ${cat.items?.length || 0}`)
+    })
+  }
+
   return (
-    <QRMenuView restaurant={restaurant} menu={menu} />
+    <QRMenuView restaurant={serializedRestaurant} menu={serializedMenu} />
   )
 }
 

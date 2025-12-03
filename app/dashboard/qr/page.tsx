@@ -6,7 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { QrCode, TrendingUp, Scan } from "lucide-react"
 import { QRGenerator } from "@/components/qr/qr-generator"
+import { BrandedQRGenerator } from "@/components/qr/branded-qr-generator"
 import { QRCodeCard } from "@/components/qr/qr-code-card"
+
+// Cache for 60 seconds - QR codes don't change frequently
+export const revalidate = 60
 
 export default async function QRMenuPage() {
   const session = await getServerSession(authOptions)
@@ -15,8 +19,10 @@ export default async function QRMenuPage() {
     redirect("/auth/login")
   }
 
+  // Optimize: Only fetch first restaurant and optimize includes
   const restaurants = await db.restaurant.findMany({
     where: { ownerId: session.user.id },
+    take: 1, // Only need first restaurant
     include: {
       qrCodes: {
         include: {
@@ -121,18 +127,31 @@ export default async function QRMenuPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <QRGenerator restaurantId={restaurant.id} />
+            <BrandedQRGenerator
+              restaurantId={restaurant.id}
+              restaurantLogo={restaurant.logo}
+              restaurantPrimaryColor={restaurant.primaryColor}
+            />
           </CardContent>
         </Card>
       ) : (
         <>
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-white">Your QR Codes</h2>
-            <QRGenerator restaurantId={restaurant.id} />
+            <BrandedQRGenerator
+              restaurantId={restaurant.id}
+              restaurantLogo={restaurant.logo}
+              restaurantPrimaryColor={restaurant.primaryColor}
+            />
           </div>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {restaurant.qrCodes.map((qrCode, index) => (
-              <QRCodeCard key={qrCode.id} qrCode={qrCode} index={index} />
+              <QRCodeCard 
+                key={qrCode.id} 
+                qrCode={qrCode} 
+                index={index}
+                restaurantName={restaurant.name}
+              />
             ))}
           </div>
         </>

@@ -4,6 +4,9 @@ import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { PremiumMenuEditor } from "@/components/menu/premium-menu-editor"
 
+// Cache for 30 seconds - menu edits need relatively fresh data
+export const revalidate = 30
+
 export default async function MenuEditPage({
   params,
 }: {

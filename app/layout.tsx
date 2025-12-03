@@ -20,6 +20,12 @@ const orbitron = Orbitron({
 export const metadata: Metadata = {
   title: "Restaurant Digital Suite - RestoDrive",
   description: "All-in-one platform for restaurants to manage QR menus, online orders, table bookings, and POS operations",
+  manifest: "/manifest.json",
+  themeColor: "#06b6d4",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+  },
 };
 
 export default function RootLayout({

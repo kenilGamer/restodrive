@@ -415,7 +415,7 @@ export function SecuritySettingsForm() {
             <Button
               type="submit"
               disabled={loading}
-              className="bg-[#FCD34D] hover:bg-[#FBBF24] text-[#0D0D0D] font-semibold border-0"
+              className="bg-gradient-to-r from-[#C97AFF] to-[#6B7CFF] hover:from-[#B869E6] hover:to-[#5B6CE6] text-white border-0"
             >
               <Save className="h-4 w-4 mr-2" />
               {loading ? "Updating..." : "Update Password"}
@@ -454,7 +454,7 @@ export function SecuritySettingsForm() {
               <Button
                 onClick={handleSetup2FA}
                 disabled={twoFactorLoading}
-                className="bg-[#FCD34D] hover:bg-[#FBBF24] text-[#0D0D0D] font-semibold border-0"
+                className="bg-gradient-to-r from-[#11C97A] to-[#0FA968] hover:from-[#0FA968] hover:to-[#0D8F5A] text-white border-0"
               >
                 <QrCode className="h-4 w-4 mr-2" />
                 {twoFactorLoading ? "Setting up..." : "Set Up 2FA"}
@@ -491,7 +491,7 @@ export function SecuritySettingsForm() {
                     <Button
                       type="button"
                       onClick={() => copyToClipboard(twoFactorSetup.manualEntryKey)}
-                      className="bg-[#1A1A1A] hover:bg-[#2A2A2A] text-gray-300 border border-[#2A2A2A] hover:border-[#FCD34D]"
+                      className="bg-[#2A2A2A] hover:bg-[#3A3A3A] text-white"
                     >
                       <Copy className="h-4 w-4" />
                     </Button>
@@ -519,7 +519,7 @@ export function SecuritySettingsForm() {
                 <Button
                   onClick={handleVerify2FA}
                   disabled={twoFactorLoading || verificationCode.length !== 6}
-                  className="w-full bg-[#FCD34D] hover:bg-[#FBBF24] text-[#0D0D0D] font-semibold border-0"
+                  className="w-full bg-gradient-to-r from-[#11C97A] to-[#0FA968] hover:from-[#0FA968] hover:to-[#0D8F5A] text-white border-0"
                 >
                   {twoFactorLoading ? "Verifying..." : "Verify and Enable"}
                 </Button>
@@ -573,7 +573,7 @@ export function SecuritySettingsForm() {
                   <Button
                     onClick={handleDisable2FA}
                     disabled={twoFactorLoading || !disablePassword || disableToken.length !== 6}
-                    className="w-full bg-[#FF6A55]/20 hover:bg-[#FF6A55]/30 text-[#FF6A55] border border-[#FF6A55]/30 font-medium"
+                    className="w-full bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30"
                   >
                     {twoFactorLoading ? "Disabling..." : "Disable 2FA"}
                   </Button>
@@ -700,7 +700,7 @@ export function SecuritySettingsForm() {
                     <Button
                       onClick={() => handleRevokeSession(session.id)}
                       disabled={revokingSessionId === session.id}
-                      className="ml-4 bg-[#FF6A55]/20 hover:bg-[#FF6A55]/30 text-[#FF6A55] border border-[#FF6A55]/30"
+                      className="ml-4 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30"
                       size="sm"
                     >
                       <Trash2 className="h-4 w-4" />

@@ -1,10 +1,12 @@
 "use client"
 
+import { useState } from "react"
 import { motion } from "framer-motion"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Eye, Download, Scan } from "lucide-react"
+import { Eye, Download, Scan, Loader2 } from "lucide-react"
 import Link from "next/link"
+import { downloadQRCode } from "@/lib/utils/download"
 
 interface QRCodeCardProps {
   qrCode: {
@@ -17,9 +19,29 @@ interface QRCodeCardProps {
     }
   }
   index: number
+  restaurantName?: string
 }
 
-export function QRCodeCard({ qrCode, index }: QRCodeCardProps) {
+export function QRCodeCard({ qrCode, index, restaurantName }: QRCodeCardProps) {
+  const [downloading, setDownloading] = useState(false)
+
+  const handleDownload = async () => {
+    if (!qrCode.imageUrl) {
+      alert("QR code image not available")
+      return
+    }
+
+    setDownloading(true)
+    try {
+      await downloadQRCode(qrCode.imageUrl, qrCode.code, restaurantName)
+    } catch (error: any) {
+      console.error("Download error:", error)
+      alert(error.message || "Failed to download QR code. Please try again.")
+    } finally {
+      setDownloading(false)
+    }
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -67,9 +89,20 @@ export function QRCodeCard({ qrCode, index }: QRCodeCardProps) {
               variant="ghost"
               size="sm"
               className="flex-1 text-gray-400 hover:text-white hover:bg-[#2A2A2A]"
+              onClick={handleDownload}
+              disabled={downloading || !qrCode.imageUrl}
             >
-              <Download className="mr-2 h-4 w-4" />
-              Download
+              {downloading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Downloading...
+                </>
+              ) : (
+                <>
+                  <Download className="mr-2 h-4 w-4" />
+                  Download PNG
+                </>
+              )}
             </Button>
           </div>
           <Button

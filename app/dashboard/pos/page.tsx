@@ -4,6 +4,9 @@ import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { PremiumPOS } from "@/components/pos/premium-pos"
 
+// Cache for 30 seconds - POS needs relatively fresh data
+export const revalidate = 30
+
 export default async function POSPage() {
   const session = await getServerSession(authOptions)
 
@@ -11,8 +14,10 @@ export default async function POSPage() {
     redirect("/auth/login")
   }
 
+  // Optimize: Only fetch first restaurant
   const restaurants = await db.restaurant.findMany({
     where: { ownerId: session.user.id },
+    take: 1, // Only need first restaurant
   })
 
   const restaurant = restaurants[0]

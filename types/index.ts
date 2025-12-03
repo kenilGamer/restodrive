@@ -32,7 +32,18 @@ export type {
 
 export type MenuWithCategories = Menu & {
   categories: (Category & {
-    items: MenuItem[]
+    items: (MenuItem & {
+      variants?: Array<{
+        id: string
+        name: string
+        price: number | string
+      }>
+      modifiers?: Array<{
+        id: string
+        name: string
+        price: number | string
+      }>
+    })[]
   })[]
 }
 

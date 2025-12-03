@@ -14,6 +14,9 @@ import { PaymentSettingsForm } from "@/components/settings/payment-settings-form
 import { NotificationSettingsForm } from "@/components/settings/notification-settings-form"
 import { SecuritySettingsForm } from "@/components/settings/security-settings-form"
 
+// Cache for 60 seconds - settings don't change frequently
+export const revalidate = 60
+
 export default async function SettingsPage() {
   const session = await getServerSession(authOptions)
 
@@ -21,8 +24,10 @@ export default async function SettingsPage() {
     redirect("/auth/login")
   }
 
+  // Optimize: Only fetch first restaurant
   const restaurants = await db.restaurant.findMany({
     where: { ownerId: session.user.id },
+    take: 1, // Only need first restaurant
   })
 
   const restaurant = restaurants[0]

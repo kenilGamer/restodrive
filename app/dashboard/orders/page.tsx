@@ -6,6 +6,9 @@ import { PremiumOrdersList } from "@/components/orders/premium-orders-list"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
+// Cache for 30 seconds - orders change frequently but don't need real-time updates
+export const revalidate = 30
+
 export default async function OrdersPage({
   searchParams,
 }: {
@@ -18,8 +21,10 @@ export default async function OrdersPage({
     redirect("/auth/login")
   }
 
+  // Optimize: Only fetch first restaurant (most users have one)
   const restaurants = await db.restaurant.findMany({
     where: { ownerId: session.user.id },
+    take: 1, // Only need first restaurant
   })
 
   const restaurant = restaurants[0]
