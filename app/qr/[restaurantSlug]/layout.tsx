@@ -1,4 +1,4 @@
-import { Metadata } from "next"
+import { Metadata, Viewport } from "next"
 import Script from "next/script"
 
 export async function generateMetadata({
@@ -12,19 +12,20 @@ export async function generateMetadata({
     title: `Menu - ${restaurantSlug}`,
     description: "Digital menu powered by Restaurant Digital Suite",
     manifest: "/manifest.json",
-    themeColor: "#06b6d4",
-    viewport: {
-      width: "device-width",
-      initialScale: 1,
-      maximumScale: 5,
-      userScalable: true,
-    },
     appleWebApp: {
       capable: true,
       statusBarStyle: "default",
       title: "RestoDrive Menu",
     },
   }
+}
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  themeColor: "#06b6d4",
 }
 
 export default function QRMenuLayout({

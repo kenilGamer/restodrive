@@ -167,8 +167,51 @@ export async function POST(req: Request) {
     const serviceCharge = Number(restaurant.serviceCharge || 0.1)
 
     const tax = subtotal * taxRate
-    const service = subtotal * serviceCharge
-    const total = subtotal + tax + service
+    // Handle loyalty points redemption
+    let pointsRedeemed = 0
+    let discountFromPoints = 0
+    let finalTotal = subtotal + tax + service
+
+    // Apply points redemption if customer is logged in and points provided
+    if (customerId && loyaltyPointsRedeemed) {
+      const { calculateDiscountFromPoints } = await import("@/lib/loyalty-config")
+
+      const customer = await db.customer.findUnique({
+        where: { id: customerId },
+      })
+
+      if (customer && customer.loyaltyPoints >= loyaltyPointsRedeemed) {
+        discountFromPoints = calculateDiscountFromPoints(
+          loyaltyPointsRedeemed,
+          finalTotal
+        )
+        pointsRedeemed = loyaltyPointsRedeemed
+        finalTotal = Math.max(0, finalTotal - discountFromPoints)
+
+        // Deduct points immediately and create redemption transaction
+        await Promise.all([
+          db.customer.update({
+            where: { id: customerId },
+            data: {
+              loyaltyPoints: {
+                decrement: pointsRedeemed,
+              },
+            },
+          }),
+          db.loyaltyPoints.create({
+            data: {
+              customerId,
+              points: -pointsRedeemed,
+              type: "REDEMPTION",
+              description: `Redeemed ${pointsRedeemed} points for order`,
+              status: "REDEEMED",
+            },
+          }),
+        ])
+      }
+    }
+
+    const total = finalTotal
 
     // Create order
     const order = await db.order.create({
@@ -177,6 +220,7 @@ export async function POST(req: Request) {
         restaurantId,
         type: type || "DINE_IN",
         status: "PENDING",
+        customerId: customerId || null,
         customerName: customerName || null,
         customerPhone: customerPhone || null,
         customerEmail: customerEmail || null,
@@ -186,6 +230,8 @@ export async function POST(req: Request) {
         subtotal,
         tax,
         serviceCharge: service,
+        discount: discountFromPoints,
+        loyaltyPointsRedeemed: pointsRedeemed,
         total,
         items: {
           create: orderItems.map((item) => ({
@@ -202,13 +248,6 @@ export async function POST(req: Request) {
               })),
             },
           })),
-        },
-      },
-      include: {
-        items: {
-          include: {
-            menuItem: true,
-          },
         },
       },
       include: {

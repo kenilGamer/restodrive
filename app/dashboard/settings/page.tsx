@@ -7,22 +7,30 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Save, Bell, CreditCard, Shield, Building2, User } from "lucide-react"
+import { Save, Bell, CreditCard, Shield, Building2, User, Globe } from "lucide-react"
 import { SlugDisplay } from "@/components/settings/slug-display"
 import { RestaurantSettingsForm } from "@/components/settings/restaurant-settings-form"
 import { PaymentSettingsForm } from "@/components/settings/payment-settings-form"
 import { NotificationSettingsForm } from "@/components/settings/notification-settings-form"
 import { SecuritySettingsForm } from "@/components/settings/security-settings-form"
+import { WebsiteSettingsForm } from "@/components/settings/website-settings-form"
 
 // Cache for 60 seconds - settings don't change frequently
 export const revalidate = 60
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>
+}) {
   const session = await getServerSession(authOptions)
 
   if (!session?.user?.id) {
     redirect("/auth/login")
   }
+
+  const params = await searchParams
+  const tab = params.tab
 
   // Optimize: Only fetch first restaurant
   const restaurants = await db.restaurant.findMany({
@@ -59,7 +67,7 @@ export default async function SettingsPage() {
         </p>
       </div>
 
-      <Tabs defaultValue="general" className="w-full">
+      <Tabs defaultValue={tab || 'general'} className="w-full">
         <TabsList className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-[12px] p-1">
           <TabsTrigger
             value="general"
@@ -74,6 +82,13 @@ export default async function SettingsPage() {
           >
             <Building2 className="h-4 w-4 mr-2" />
             Restaurant
+          </TabsTrigger>
+          <TabsTrigger
+            value="website"
+            className="data-[state=active]:bg-[#FCD34D] data-[state=active]:text-[#0D0D0D] text-gray-400"
+          >
+            <Globe className="h-4 w-4 mr-2" />
+            Website
           </TabsTrigger>
           {isAdmin && (
             <TabsTrigger
@@ -157,6 +172,22 @@ export default async function SettingsPage() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="website" className="mt-6">
+          <WebsiteSettingsForm
+            restaurant={{
+              id: restaurant.id,
+              slug: restaurant.slug,
+              description: restaurant.description,
+              coverImage: restaurant.coverImage,
+              isPublished: restaurant.isPublished,
+              primaryColor: restaurant.primaryColor,
+              secondaryColor: restaurant.secondaryColor,
+              fontFamily: restaurant.fontFamily,
+              website: restaurant.website,
+            }}
+          />
         </TabsContent>
 
         {isAdmin && (

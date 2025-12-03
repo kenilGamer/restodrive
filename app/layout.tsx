@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Space_Grotesk, Orbitron } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "@/components/providers/session-provider";
@@ -21,11 +21,14 @@ export const metadata: Metadata = {
   title: "Restaurant Digital Suite - RestoDrive",
   description: "All-in-one platform for restaurants to manage QR menus, online orders, table bookings, and POS operations",
   manifest: "/manifest.json",
-  themeColor: "#06b6d4",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#06b6d4",
 };
 
 export default function RootLayout({
@@ -39,7 +42,7 @@ export default function RootLayout({
         className={`${spaceGrotesk.variable} ${orbitron.variable} antialiased`}
         suppressHydrationWarning
       >
-        <SessionProvider>
+        <SessionProvider session={null}>
           {children}
         </SessionProvider>
       </body>

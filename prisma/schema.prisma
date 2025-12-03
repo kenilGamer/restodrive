@@ -162,6 +162,7 @@ model Restaurant {
   staff           Staff[]
   payments        Payment[]
   analyticsEvents AnalyticsEvent[]
+  favoriteItems   FavoriteItem[]
 
   @@index([slug])
   @@index([ownerId])
@@ -273,6 +274,7 @@ model MenuItem {
   orderItems    OrderItem[]
   variants      ItemVariant[]
   modifiers     ItemModifier[]
+  favoriteItems FavoriteItem[]
 
   @@index([categoryId])
   @@index([isAvailable])
@@ -361,6 +363,10 @@ model Order {
   tableId         String?
   customerId      String? // If logged in customer
   
+  // Loyalty
+  loyaltyPointsEarned    Int      @default(0)
+  loyaltyPointsRedeemed  Int      @default(0)
+  
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   completedAt     DateTime?
@@ -369,8 +375,10 @@ model Order {
   restaurant      Restaurant @relation(fields: [restaurantId], references: [id])
   branch          Branch?    @relation(fields: [branchId], references: [id])
   table           Table?     @relation(fields: [tableId], references: [id])
+  customer        Customer?  @relation(fields: [customerId], references: [id])
   items           OrderItem[]
   payments        Payment[]
+  loyaltyTransactions LoyaltyPoints[]
 
   @@index([restaurantId])
   @@index([orderNumber])
@@ -378,6 +386,7 @@ model Order {
   @@index([createdAt])
   @@index([restaurantId, createdAt])
   @@index([restaurantId, createdAt, paymentStatus])
+  @@index([customerId])
   @@map("orders")
 }
 
@@ -680,4 +689,205 @@ model AnalyticsEvent {
   @@index([eventType])
   @@index([createdAt])
   @@map("analytics_events")
+}
+
+// ============================================
+// CUSTOMERS & LOYALTY
+// ============================================
+
+model Customer {
+  id                String   @id @default(cuid())
+  email             String?  @unique
+  phone             String?  @unique
+  password          String?  // Hashed password
+  name              String
+  avatar            String?
+  dateOfBirth       DateTime?
+  
+  // Verification
+  emailVerified     Boolean  @default(false)
+  phoneVerified     Boolean  @default(false)
+  emailVerifiedAt   DateTime?
+  phoneVerifiedAt   DateTime?
+  
+  // Loyalty
+  loyaltyPoints     Int      @default(0)
+  loyaltyTier       LoyaltyTier @default(BRONZE)
+  referralCode      String   @unique
+  referredBy        String?  // Customer ID who referred this customer
+  
+  // Preferences
+  dietaryPreferences String[] // ["vegetarian", "vegan", "gluten-free"]
+  allergies         String[] // ["peanuts", "dairy", "shellfish"]
+  favoriteCuisines  String[] // ["Italian", "Indian", "Chinese"]
+  
+  // Account Status
+  isActive          Boolean  @default(true)
+  isBlocked         Boolean  @default(false)
+  blockedReason     String?  @db.Text
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  lastLoginAt       DateTime?
+
+  // Relations
+  orders            Order[]
+  addresses         CustomerAddress[]
+  favoriteItems     FavoriteItem[]
+  loyaltyTransactions LoyaltyPoints[]
+  referralsGiven    Referral[] @relation("Referrer")
+  referralReceived  Referral?  @relation("Referred")
+
+  @@index([email])
+  @@index([phone])
+  @@index([referralCode])
+  @@index([loyaltyTier])
+  @@map("customers")
+}
+
+enum LoyaltyTier {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+}
+
+model CustomerAddress {
+  id            String   @id @default(cuid())
+  customerId    String
+  
+  // Address Details
+  type          AddressType @default(HOME)
+  label         String?  // "Home", "Work", "Other"
+  fullName      String
+  phone         String
+  addressLine1  String
+  addressLine2  String?
+  city          String
+  state         String?
+  zipCode       String?
+  country       String   @default("India")
+  
+  // Location
+  latitude      Float?
+  longitude     Float?
+  
+  // Default
+  isDefault     Boolean  @default(false)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  customer      Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@map("customer_addresses")
+}
+
+enum AddressType {
+  HOME
+  WORK
+  OTHER
+}
+
+model FavoriteItem {
+  id            String   @id @default(cuid())
+  customerId    String
+  menuItemId    String
+  restaurantId  String
+  
+  createdAt     DateTime @default(now())
+
+  customer      Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  menuItem      MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  restaurant    Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, menuItemId])
+  @@index([customerId])
+  @@index([restaurantId])
+  @@map("favorite_items")
+}
+
+model LoyaltyPoints {
+  id            String   @id @default(cuid())
+  customerId    String
+  
+  // Transaction Details
+  points        Int      // Positive for earned, negative for redeemed
+  type          LoyaltyTransactionType
+  description   String?  @db.Text
+  
+  // Related Entities
+  orderId       String?
+  referralId    String?
+  
+  // Expiration
+  expiresAt     DateTime?
+  
+  // Status
+  status        LoyaltyTransactionStatus @default(ACTIVE)
+  
+  createdAt     DateTime @default(now())
+
+  customer      Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  order         Order?   @relation(fields: [orderId], references: [id])
+  referral      Referral? @relation("ReferralLoyaltyPoints", fields: [referralId], references: [id])
+
+  @@index([customerId])
+  @@index([orderId])
+  @@index([type])
+  @@index([status])
+  @@index([expiresAt])
+  @@map("loyalty_points")
+}
+
+enum LoyaltyTransactionType {
+  ORDER_EARNED
+  REFERRAL_EARNED
+  REDEMPTION
+  EXPIRATION
+  MANUAL_ADJUSTMENT
+  BIRTHDAY_BONUS
+}
+
+enum LoyaltyTransactionStatus {
+  ACTIVE
+  EXPIRED
+  REDEEMED
+  CANCELLED
+}
+
+model Referral {
+  id            String   @id @default(cuid())
+  referrerId    String   // Customer who referred
+  referredId    String   @unique // Customer who was referred
+  referralCode  String
+  
+  // Rewards
+  referrerPointsAwarded  Int      @default(0)
+  referredPointsAwarded  Int      @default(0)
+  
+  // Status
+  status        ReferralStatus @default(PENDING)
+  
+  // Tracking
+  firstOrderId  String?  // First order by referred customer
+  
+  createdAt     DateTime @default(now())
+  completedAt   DateTime?
+
+  referrer      Customer @relation("Referrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  referred      Customer @relation("Referred", fields: [referredId], references: [id], onDelete: Cascade)
+  loyaltyTransactions LoyaltyPoints[] @relation("ReferralLoyaltyPoints")
+
+  @@index([referrerId])
+  @@index([referralCode])
+  @@index([status])
+  @@map("referrals")
+}
+
+enum ReferralStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
 }
