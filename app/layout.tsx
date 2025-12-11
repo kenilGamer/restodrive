@@ -1,20 +1,27 @@
 import type { Metadata, Viewport } from "next";
-import { Space_Grotesk, Orbitron } from "next/font/google";
+import { Inter, Poppins, Sora } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "@/components/providers/session-provider";
 
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
   display: "swap",
   weight: ["300", "400", "500", "600", "700"],
 });
 
-const orbitron = Orbitron({
-  variable: "--font-orbitron",
+const poppins = Poppins({
+  variable: "--font-poppins",
   subsets: ["latin"],
   display: "swap",
-  weight: ["400", "500", "600", "700", "800", "900"],
+  weight: ["300", "400", "500", "600", "700"],
+});
+
+const sora = Sora({
+  variable: "--font-sora",
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -39,7 +46,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${spaceGrotesk.variable} ${orbitron.variable} antialiased`}
+        className={`${inter.variable} ${poppins.variable} ${sora.variable} antialiased`}
         suppressHydrationWarning
       >
         <SessionProvider session={null}>

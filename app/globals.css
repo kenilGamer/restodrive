@@ -63,9 +63,9 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --font-sans: var(--font-space-grotesk);
-  --font-mono: var(--font-space-grotesk);
-  --font-orbitron: var(--font-orbitron);
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-display: var(--font-poppins), var(--font-sora), system-ui, sans-serif;
+  --font-body: var(--font-inter), system-ui, sans-serif;
   
   /* Gold Colors */
   --color-gold-50: #FFFBEB;
@@ -78,12 +78,28 @@
   --color-gold-700: #B45309;
   --color-gold-800: #92400E;
   --color-gold-900: #78350F;
+  
+  /* Premium Design System Colors */
+  --color-charcoal: #111217;
+  --color-amber-start: #FFB800;
+  --color-amber-end: #FF8A00;
+  --color-stone-light: #F4F4F4;
+  --color-stone-white: #FFFFFF;
+  --color-stone-muted: #6B7280;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), system-ui, sans-serif;
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+@media (min-width: 768px) {
+  body {
+    font-size: 18px;
+  }
 }
 
 * {
@@ -118,12 +134,37 @@ body {
   }
   
   /* Font Utilities */
-  .font-orbitron {
-    font-family: var(--font-orbitron), sans-serif;
+  .font-display {
+    font-family: var(--font-display);
+    letter-spacing: 0.02em;
   }
   
-  .font-space-grotesk {
-    font-family: var(--font-space-grotesk), sans-serif;
+  .font-body {
+    font-family: var(--font-body);
+  }
+  
+  /* Glassmorphism */
+  .glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  
+  .glass-dark {
+    background: rgba(17, 18, 23, 0.8);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  
+  /* Reduced Motion */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
   
   /* Neon Glow Animations */
